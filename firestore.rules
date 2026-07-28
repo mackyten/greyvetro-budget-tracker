@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// TEMPORARY: this app has no auth yet — greyvetro-auth-hub (Keycloak)
+// integration is planned but not wired in (see README.md / TASKS.md). Until
+// then there is no `request.auth` to key rules off of, so access is only
+// gated by a time window (mirrors Firebase Console's own "test mode"
+// default) so a forgotten deploy doesn't stay open forever.
+//
+// Replace this whole block with real per-user rules once auth-hub tokens
+// are exchanged for Firebase custom auth tokens.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.time < timestamp.date(2026, 10, 31);
+    }
+  }
+}

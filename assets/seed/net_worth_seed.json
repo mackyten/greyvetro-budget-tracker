@@ -1,0 +1,590 @@
+{
+  "accounts": [
+    {
+      "id": "bpi",
+      "name": "BPI",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 0,
+      "active": true
+    },
+    {
+      "id": "bdo_unibank",
+      "name": "BDO Unibank",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 1,
+      "active": true
+    },
+    {
+      "id": "bdo_networkbank",
+      "name": "BDO Networkbank",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 2,
+      "active": true
+    },
+    {
+      "id": "landbank",
+      "name": "Landbank",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 3,
+      "active": true
+    },
+    {
+      "id": "gcash",
+      "name": "GCASH",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 4,
+      "active": true
+    },
+    {
+      "id": "gsave",
+      "name": "GSAVE",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 5,
+      "active": true
+    },
+    {
+      "id": "bpi_investment",
+      "name": "BPI Investment",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 6,
+      "active": true
+    },
+    {
+      "id": "cash",
+      "name": "Cash",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 7,
+      "active": true
+    },
+    {
+      "id": "pagibig",
+      "name": "PAGIBIG",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 8,
+      "active": true
+    },
+    {
+      "id": "maya_savings",
+      "name": "Maya Savings",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 9,
+      "active": true
+    },
+    {
+      "id": "maya_wallet",
+      "name": "Maya Wallet",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 10,
+      "active": true
+    },
+    {
+      "id": "vybe",
+      "name": "VYBE",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 11,
+      "active": true
+    },
+    {
+      "id": "binance",
+      "name": "Binance",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 12,
+      "active": true
+    },
+    {
+      "id": "maribank",
+      "name": "Maribank",
+      "section": "asset",
+      "reservedKind": null,
+      "order": 13,
+      "active": true
+    },
+    {
+      "id": "papa",
+      "name": "Papa",
+      "section": "reservedLiability",
+      "reservedKind": "reserved",
+      "order": 14,
+      "active": true
+    },
+    {
+      "id": "mama",
+      "name": "Mama",
+      "section": "reservedLiability",
+      "reservedKind": "reserved",
+      "order": 15,
+      "active": true
+    },
+    {
+      "id": "health_emergency",
+      "name": "Health Emergency",
+      "section": "reservedLiability",
+      "reservedKind": "reserved",
+      "order": 16,
+      "active": true
+    },
+    {
+      "id": "lupa_for_next_month",
+      "name": "Lupa For Next Month",
+      "section": "reservedLiability",
+      "reservedKind": "reserved",
+      "order": 17,
+      "active": true
+    },
+    {
+      "id": "bpi_cc",
+      "name": "BPI CC",
+      "section": "reservedLiability",
+      "reservedKind": "creditCard",
+      "order": 18,
+      "active": true
+    },
+    {
+      "id": "unionbank_cc",
+      "name": "Unionbank CC",
+      "section": "reservedLiability",
+      "reservedKind": "creditCard",
+      "order": 19,
+      "active": true
+    },
+    {
+      "id": "bdo_cc",
+      "name": "BDO CC",
+      "section": "reservedLiability",
+      "reservedKind": "creditCard",
+      "order": 20,
+      "active": true
+    },
+    {
+      "id": "maya_cc",
+      "name": "Maya CC",
+      "section": "reservedLiability",
+      "reservedKind": "creditCard",
+      "order": 21,
+      "active": true
+    },
+    {
+      "id": "mama_emergency_fund",
+      "name": "Mama Emergency Fund",
+      "section": "reservedLiability",
+      "reservedKind": "reserved",
+      "order": 22,
+      "active": true
+    }
+  ],
+  "monthlyEntries": [
+    {
+      "id": "2025-04",
+      "balances": {
+        "bpi": 3861.58,
+        "bdo_unibank": 12616.65,
+        "bdo_networkbank": 56531.51,
+        "landbank": 10099.72,
+        "gcash": 519.01,
+        "gsave": 3447.56,
+        "bpi_investment": 20437.35,
+        "cash": 18060.0,
+        "pagibig": 15000.0,
+        "maya_savings": 0.0,
+        "maya_wallet": 0.0,
+        "vybe": 1100.0,
+        "papa": 42000.0,
+        "mama": 40000.0,
+        "health_emergency": 22000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 1500.0,
+        "unionbank_cc": 13430.71,
+        "mama_emergency_fund": 0.0
+      }
+    },
+    {
+      "id": "2025-05",
+      "balances": {
+        "bpi": 2175.61,
+        "bdo_unibank": 12617.25,
+        "bdo_networkbank": 57536.25,
+        "landbank": 6099.72,
+        "gcash": 211.01,
+        "gsave": 3454.66,
+        "bpi_investment": 20492.66,
+        "cash": 28690.0,
+        "pagibig": 15000.0,
+        "maya_savings": 5000.0,
+        "maya_wallet": 0.0,
+        "vybe": 100.0,
+        "papa": 45000.0,
+        "mama": 40000.0,
+        "health_emergency": 23000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 3583.33,
+        "unionbank_cc": 3878.32,
+        "mama_emergency_fund": 0.0
+      }
+    },
+    {
+      "id": "2025-06",
+      "balances": {
+        "bpi": 2860.33,
+        "bdo_unibank": 5597.25,
+        "bdo_networkbank": 58636.25,
+        "landbank": 17099.72,
+        "gcash": 1191.35,
+        "gsave": 455.61,
+        "bpi_investment": 20455.34,
+        "cash": 31320.0,
+        "pagibig": 15000.0,
+        "maya_savings": 6011.02,
+        "maya_wallet": 0.0,
+        "vybe": 1500.0,
+        "papa": 33500.0,
+        "mama": 40000.0,
+        "health_emergency": 24000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 6373.45,
+        "unionbank_cc": 3959.01,
+        "mama_emergency_fund": 1000.0
+      }
+    },
+    {
+      "id": "2025-07",
+      "balances": {
+        "bpi": 3128.34,
+        "bdo_unibank": 1123.98,
+        "bdo_networkbank": 58641.11,
+        "landbank": 19100.85,
+        "gcash": 461.38,
+        "gsave": 58.91,
+        "bpi_investment": 20632.77,
+        "cash": 48200.0,
+        "pagibig": 15000.0,
+        "maya_savings": 6026.0,
+        "maya_wallet": 0.0,
+        "vybe": 500.0,
+        "papa": 42000.0,
+        "mama": 40000.0,
+        "health_emergency": 25000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 0.0,
+        "unionbank_cc": 209.13,
+        "mama_emergency_fund": 1500.0
+      }
+    },
+    {
+      "id": "2025-08",
+      "balances": {
+        "bpi": 29657.54,
+        "bdo_unibank": 4223.98,
+        "bdo_networkbank": 58641.11,
+        "landbank": 22100.0,
+        "gcash": 9720.38,
+        "gsave": 59.0,
+        "bpi_investment": 20713.88,
+        "cash": 32480.0,
+        "pagibig": 15000.0,
+        "maya_savings": 10042.33,
+        "maya_wallet": 0.0,
+        "vybe": 261.28,
+        "papa": 44500.0,
+        "mama": 40000.0,
+        "health_emergency": 26000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 10473.75,
+        "unionbank_cc": 2128.95,
+        "mama_emergency_fund": 2000.0
+      }
+    },
+    {
+      "id": "2025-09",
+      "balances": {
+        "bpi": 25155.65,
+        "bdo_unibank": 4223.98,
+        "bdo_networkbank": 58641.11,
+        "landbank": 22100.85,
+        "gcash": 542.38,
+        "gsave": 59.1,
+        "bpi_investment": 20783.93,
+        "cash": 52330.0,
+        "pagibig": 15000.0,
+        "maya_savings": 10065.45,
+        "maya_wallet": 1.0,
+        "vybe": 43.28,
+        "papa": 43500.0,
+        "mama": 40000.0,
+        "health_emergency": 27000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 8104.91,
+        "unionbank_cc": 0.0,
+        "bdo_cc": 169.0,
+        "mama_emergency_fund": 2500.0
+      }
+    },
+    {
+      "id": "2025-10",
+      "balances": {
+        "bpi": 38989.13,
+        "bdo_unibank": 4053.29,
+        "bdo_networkbank": 58646.01,
+        "landbank": 22102.87,
+        "gcash": 922.38,
+        "gsave": 59.2,
+        "bpi_investment": 20866.89,
+        "cash": 66450.0,
+        "pagibig": 15000.0,
+        "maya_savings": 10088.63,
+        "maya_wallet": 0.0,
+        "vybe": 1194.89,
+        "papa": 45000.0,
+        "mama": 40000.0,
+        "health_emergency": 28000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 8170.95,
+        "unionbank_cc": 0.0,
+        "bdo_cc": 805.94,
+        "mama_emergency_fund": 3000.0
+      },
+      "note": "Monthly budget not deducted"
+    },
+    {
+      "id": "2025-11",
+      "balances": {
+        "bpi": 28314.43,
+        "bdo_unibank": 6418.04,
+        "bdo_networkbank": 58648.5,
+        "landbank": 22102.87,
+        "gcash": 1252.38,
+        "gsave": 59.3,
+        "bpi_investment": 20935.1,
+        "cash": 81340.0,
+        "pagibig": 15000.0,
+        "maya_savings": 24858.72,
+        "maya_wallet": 0.0,
+        "vybe": 874.69,
+        "binance": 3542.96,
+        "papa": 57500.0,
+        "mama": 40000.0,
+        "health_emergency": 29000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 16090.34,
+        "unionbank_cc": 2758.29,
+        "bdo_cc": 3067.93,
+        "mama_emergency_fund": 3500.0
+      }
+    },
+    {
+      "id": "2025-12",
+      "balances": {
+        "bpi": 23164.29,
+        "bdo_unibank": 3352.31,
+        "bdo_networkbank": 58650.91,
+        "landbank": 7087.87,
+        "gcash": 0.0,
+        "gsave": 2091.43,
+        "bpi_investment": 20984.88,
+        "cash": 65450.0,
+        "pagibig": 15000.0,
+        "maya_savings": 80711.83,
+        "maya_wallet": 6.0,
+        "vybe": 354.49,
+        "binance": 3408.33,
+        "papa": 55500.0,
+        "mama": 40000.0,
+        "health_emergency": 20000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 9376.48,
+        "unionbank_cc": 232.3,
+        "bdo_cc": 2894.29,
+        "maya_cc": 10453.31,
+        "mama_emergency_fund": 4000.0
+      },
+      "note": "Monthly budget not deducted"
+    },
+    {
+      "id": "2026-01",
+      "balances": {
+        "bpi": 21992.62,
+        "bdo_unibank": 1058.74,
+        "bdo_networkbank": 13575.89,
+        "landbank": 1074.89,
+        "gcash": 5156.0,
+        "gsave": 61.36,
+        "bpi_investment": 21992.62,
+        "cash": 100299.0,
+        "pagibig": 15000.0,
+        "maya_savings": 95781.09,
+        "maya_wallet": 577.0,
+        "vybe": 185.95,
+        "binance": 3281.04,
+        "papa": 63500.0,
+        "mama": 40000.0,
+        "health_emergency": 21000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 5283.71,
+        "unionbank_cc": 1290.78,
+        "bdo_cc": 3504.11,
+        "maya_cc": 5902.75,
+        "mama_emergency_fund": 4500.0
+      },
+      "note": "Monthly budget not deducted"
+    },
+    {
+      "id": "2026-02",
+      "balances": {
+        "bpi": 25133.65,
+        "bdo_unibank": 1554.63,
+        "bdo_networkbank": 13576.53,
+        "landbank": 6074.89,
+        "gcash": 545.52,
+        "gsave": 61.6,
+        "bpi_investment": 21128.57,
+        "cash": 45188.0,
+        "pagibig": 15000.0,
+        "maya_savings": 100792.78,
+        "maya_wallet": 0.0,
+        "vybe": 117.17,
+        "binance": 2562.46,
+        "papa": 65500.0,
+        "mama": 40000.0,
+        "health_emergency": 21000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 3670.22,
+        "unionbank_cc": 0.0,
+        "bdo_cc": 2047.13,
+        "maya_cc": 6185.49,
+        "mama_emergency_fund": 5000.0
+      },
+      "note": "Monthly budget not deducted"
+    },
+    {
+      "id": "2026-03",
+      "balances": {
+        "bpi": 23897.56,
+        "bdo_unibank": 2255.63,
+        "bdo_networkbank": 13576.53,
+        "landbank": 6074.89,
+        "gcash": 862.52,
+        "gsave": 61.6,
+        "bpi_investment": 21169.23,
+        "cash": 52860.0,
+        "pagibig": 15830.67,
+        "maya_savings": 102107.93,
+        "maya_wallet": 165.5,
+        "vybe": 65.68,
+        "binance": 2673.08,
+        "papa": 68500.0,
+        "mama": 40000.0,
+        "health_emergency": 22000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 11484.43,
+        "unionbank_cc": 0.0,
+        "bdo_cc": 1134.26,
+        "maya_cc": 8749.46,
+        "mama_emergency_fund": 5500.0
+      },
+      "note": "Monthly budget not deducted"
+    },
+    {
+      "id": "2026-04",
+      "balances": {
+        "bpi": 26490.9,
+        "bdo_unibank": 521.37,
+        "bdo_networkbank": 13577.66,
+        "landbank": 6075.39,
+        "gcash": 601.52,
+        "gsave": 61.81,
+        "bpi_investment": 21266.94,
+        "cash": 24150.0,
+        "pagibig": 15830.67,
+        "maya_savings": 107538.53,
+        "maya_wallet": 886.04,
+        "vybe": 365.68,
+        "binance": 3287.83,
+        "papa": 74000.0,
+        "mama": 40000.0,
+        "health_emergency": 20000.0,
+        "lupa_for_next_month": 0.0,
+        "bpi_cc": 197.83,
+        "unionbank_cc": 3784.71,
+        "bdo_cc": 689.78,
+        "maya_cc": 3414.96,
+        "mama_emergency_fund": 4500.0
+      },
+      "note": "Lupa already paid/ Monthly budget not deducted"
+    },
+    {
+      "id": "2026-05",
+      "balances": {
+        "bpi": 28388.32,
+        "bdo_unibank": 841.81,
+        "bdo_networkbank": 13578.24,
+        "landbank": 11067.39,
+        "gcash": 34.52,
+        "gsave": 61.92,
+        "bpi_investment": 21327.78,
+        "cash": 40830.0,
+        "pagibig": 15830.67,
+        "maya_savings": 120029.51,
+        "maya_wallet": 990.08,
+        "vybe": 689.89,
+        "binance": 2945.63,
+        "papa": 76000.0,
+        "mama": 40000.0,
+        "health_emergency": 21000.0,
+        "lupa_for_next_month": 15000.0,
+        "bpi_cc": 594.89,
+        "unionbank_cc": 1999.49,
+        "bdo_cc": 708.31,
+        "maya_cc": 10121.95,
+        "mama_emergency_fund": 5000.0
+      },
+      "note": "Lupa deducted/ budget not deducted"
+    },
+    {
+      "id": "2026-06",
+      "balances": {
+        "bpi": 29540.5,
+        "bdo_unibank": 133.5,
+        "bdo_networkbank": 13578.24,
+        "landbank": 1067.39,
+        "gcash": 138.52,
+        "gsave": 61.92,
+        "bpi_investment": 21395.99,
+        "cash": 21350.0,
+        "pagibig": 15830.67,
+        "maya_savings": 120029.51,
+        "maya_wallet": 106.64,
+        "vybe": 10689.89,
+        "binance": 4424.71,
+        "maribank": 5127.0,
+        "papa": 50000.0,
+        "mama": 40000.0,
+        "health_emergency": 22000.0,
+        "lupa_for_next_month": 10000.0,
+        "bpi_cc": 5241.66,
+        "unionbank_cc": 0.0,
+        "bdo_cc": 0.0,
+        "maya_cc": 15111.54,
+        "mama_emergency_fund": 5500.0
+      },
+      "note": "Lupa must be added to the \u201cSinking Fund\u201d/ Lupa Deducted/ Budget not deducted"
+    },
+    {
+      "id": "2026-07",
+      "balances": {
+        "mama": 20000.0
+      }
+    }
+  ]
+}
