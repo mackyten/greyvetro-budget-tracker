@@ -62,7 +62,8 @@
       "section": "asset",
       "reservedKind": null,
       "order": 7,
-      "active": true
+      "active": true,
+      "cashCounter": true
     },
     {
       "id": "pagibig",

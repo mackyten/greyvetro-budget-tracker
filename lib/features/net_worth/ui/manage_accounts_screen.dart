@@ -51,6 +51,7 @@ class ManageAccountsScreen extends StatelessWidget {
     final nameController = TextEditingController();
     AccountSection section = AccountSection.asset;
     ReservedKind reservedKind = ReservedKind.reserved;
+    bool cashCounter = false;
 
     await showDialog<void>(
       context: context,
@@ -101,6 +102,15 @@ class ManageAccountsScreen extends StatelessWidget {
                       onChanged: (v) => setDialogState(() => reservedKind = v!),
                     ),
                   ],
+                  if (section == AccountSection.asset) ...[
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Cash denomination counter'),
+                      value: cashCounter,
+                      onChanged: (v) => setDialogState(() => cashCounter = v),
+                    ),
+                  ],
                 ],
               ),
               actions: [
@@ -125,6 +135,7 @@ class ManageAccountsScreen extends StatelessWidget {
                         reservedKind:
                             section == AccountSection.reservedLiability ? reservedKind : null,
                         order: order,
+                        cashCounter: section == AccountSection.asset ? cashCounter : false,
                       ),
                     );
                     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
@@ -190,9 +201,30 @@ class _AccountTile extends StatelessWidget {
       subtitle: account.reservedKind != null
           ? Text(account.reservedKind == ReservedKind.creditCard ? 'Credit card' : 'Reserved fund')
           : null,
-      trailing: Switch(
-        value: account.active,
-        onChanged: (value) => repository.setAccountActive(account.id, value),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (account.section == AccountSection.asset)
+            IconButton(
+              tooltip: account.cashCounter
+                  ? 'Cash counter enabled — tap to disable'
+                  : 'Enable cash denomination counter',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                Icons.calculate,
+                color: account.cashCounter
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
+              ),
+              onPressed: () => repository.updateAccount(
+                account.copyWith(cashCounter: !account.cashCounter),
+              ),
+            ),
+          Switch(
+            value: account.active,
+            onChanged: (value) => repository.setAccountActive(account.id, value),
+          ),
+        ],
       ),
     );
   }

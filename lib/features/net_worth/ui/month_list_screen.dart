@@ -5,6 +5,7 @@ import '../data/budget_repository.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
+import 'dashboard_screen.dart';
 import 'manage_accounts_screen.dart';
 import 'month_detail_screen.dart';
 
@@ -19,6 +20,15 @@ class MonthListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Net Worth / Liquidity Tracker'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.insights),
+            tooltip: 'Dashboard',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => DashboardScreen(repository: repository),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Manage accounts',

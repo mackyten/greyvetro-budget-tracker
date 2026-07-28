@@ -6,6 +6,7 @@ import '../data/budget_repository.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
+import 'cash_counter_sheet.dart';
 
 class MonthDetailScreen extends StatefulWidget {
   const MonthDetailScreen({
@@ -189,6 +190,22 @@ class _AccountRow extends StatelessWidget {
           Icon(icon, size: 20, color: Theme.of(context).colorScheme.outline),
           const SizedBox(width: 12),
           Expanded(child: Text(account.name)),
+          if (account.cashCounter)
+            IconButton(
+              icon: const Icon(Icons.calculate_outlined),
+              tooltip: 'Count cash',
+              visualDensity: VisualDensity.compact,
+              onPressed: () async {
+                final total = await showModalBottomSheet<double>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const CashCounterSheet(),
+                );
+                if (total != null) {
+                  controller.text = total.toStringAsFixed(2);
+                }
+              },
+            ),
           SizedBox(
             width: 140,
             child: TextField(

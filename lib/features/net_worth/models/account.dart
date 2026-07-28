@@ -15,6 +15,7 @@ class Account {
     this.reservedKind,
     required this.order,
     this.active = true,
+    this.cashCounter = false,
   });
 
   final String id;
@@ -23,6 +24,11 @@ class Account {
   final ReservedKind? reservedKind;
   final int order;
   final bool active;
+
+  /// Whether this row shows the denomination-counter shortcut when entering
+  /// its monthly balance (see [AccountSection.asset] accounts that track
+  /// physical cash, e.g. a wallet).
+  final bool cashCounter;
 
   factory Account.fromMap(String id, Map<String, dynamic> map) {
     return Account(
@@ -34,6 +40,7 @@ class Account {
           : null,
       order: (map['order'] as num).toInt(),
       active: map['active'] as bool? ?? true,
+      cashCounter: map['cashCounter'] as bool? ?? false,
     );
   }
 
@@ -44,10 +51,11 @@ class Account {
       'reservedKind': reservedKind?.name,
       'order': order,
       'active': active,
+      'cashCounter': cashCounter,
     };
   }
 
-  Account copyWith({String? name, bool? active, int? order}) {
+  Account copyWith({String? name, bool? active, int? order, bool? cashCounter}) {
     return Account(
       id: id,
       name: name ?? this.name,
@@ -55,6 +63,7 @@ class Account {
       reservedKind: reservedKind,
       order: order ?? this.order,
       active: active ?? this.active,
+      cashCounter: cashCounter ?? this.cashCounter,
     );
   }
 }
