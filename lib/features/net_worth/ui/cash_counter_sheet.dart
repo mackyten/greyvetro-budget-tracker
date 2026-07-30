@@ -115,7 +115,7 @@ class _CashCounterSheetState extends State<CashCounterSheet> {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        fontFamily: manropeFont,
+                        fontFamily: uiFont,
                         color: palette.heading,
                       ),
                     ),
@@ -156,7 +156,7 @@ class _CashCounterSheetState extends State<CashCounterSheet> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          fontFamily: manropeFont,
+                          fontFamily: uiFont,
                           color: palette.heading,
                         ),
                       ),
@@ -255,7 +255,7 @@ class _DenominationRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w700,
-                      fontFamily: manropeFont,
+                      fontFamily: uiFont,
                       color: palette.muted,
                     ),
                   ),
@@ -270,7 +270,7 @@ class _DenominationRow extends StatelessWidget {
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: TextStyle(fontSize: 13, fontFamily: manropeFont, color: palette.heading),
+              style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
               decoration: InputDecoration(
                 isDense: true,
                 filled: true,

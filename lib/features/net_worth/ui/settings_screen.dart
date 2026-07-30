@@ -35,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        fontFamily: manropeFont,
+                        fontFamily: uiFont,
                         color: palette.heading,
                       ),
                     ),
@@ -96,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            fontFamily: manropeFont,
+                            fontFamily: uiFont,
                             color: palette.muted,
                           ),
                         ),
@@ -111,7 +111,7 @@ class SettingsScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              fontFamily: manropeFont,
+                              fontFamily: uiFont,
                               color: palette.muted,
                             ),
                           ),
@@ -137,11 +137,11 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.6,
-        fontFamily: manropeFont,
+        fontFamily: uiFont,
         color: AppPalette.blueDeep,
       ),
     );

@@ -1,14 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../data/budget_repository.dart';
+import '../data/month_draft_store.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'cash_counter_sheet.dart';
 import 'ghost_icon_button.dart';
+
+/// How long to wait after the last keystroke before persisting a local
+/// draft — frequent enough that an accidental dismiss loses at most a
+/// fraction of a second of typing, infrequent enough to not thrash storage.
+const _draftSaveDebounce = Duration(milliseconds: 400);
 
 /// Opens the Month Detail editor as a large, draggable modal sheet (rather
 /// than a pushed screen) so it reads as "temporarily editing a record" while
@@ -56,8 +64,18 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   late final Map<String, TextEditingController> _controllers;
   late final TextEditingController _noteController;
   bool _saving = false;
+  Timer? _draftSaveTimer;
 
-  void _rebuild() => setState(() {});
+  /// Set once the user explicitly taps Save — suppresses the dispose-time
+  /// draft flush, since the data is now safely persisted server-side and any
+  /// local draft has already been cleared.
+  bool _committed = false;
+
+  void _rebuild() {
+    setState(() {});
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(_draftSaveDebounce, _persistDraft);
+  }
 
   @override
   void initState() {
@@ -76,10 +94,44 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
       c.addListener(_rebuild);
     }
     _noteController.addListener(_rebuild);
+
+    _restoreDraftIfAny();
+  }
+
+  /// Recovers edits from a previous session that never made it to an
+  /// explicit Save (e.g. the user backed out by accident) — takes priority
+  /// over whatever's already saved for this month, since it's strictly more
+  /// recent.
+  Future<void> _restoreDraftIfAny() async {
+    final draft = await MonthDraftStore.instance.load(widget.entry.id);
+    if (draft == null || !mounted) return;
+    for (final entry in draft.balances.entries) {
+      _controllers[entry.key]?.text = entry.value;
+    }
+    _noteController.text = draft.note;
+  }
+
+  Future<void> _persistDraft() async {
+    final balances = {for (final e in _controllers.entries) e.key: e.value.text};
+    await MonthDraftStore.instance.save(
+      widget.entry.id,
+      MonthDraft(balances: balances, note: _noteController.text),
+    );
   }
 
   @override
   void dispose() {
+    final hadPendingEdits = _draftSaveTimer?.isActive ?? false;
+    _draftSaveTimer?.cancel();
+    // Flush the latest keystrokes even if the debounce hadn't fired yet —
+    // this is the exact "accidental back tap" moment the draft exists for.
+    if (!_committed && hadPendingEdits) {
+      final balances = {for (final e in _controllers.entries) e.key: e.value.text};
+      MonthDraftStore.instance.save(
+        widget.entry.id,
+        MonthDraft(balances: balances, note: _noteController.text),
+      );
+    }
     for (final c in _controllers.values) {
       c.dispose();
     }
@@ -104,6 +156,9 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
     setState(() => _saving = true);
     try {
       await widget.repository.saveMonthlyEntry(_liveEntry);
+      _committed = true;
+      _draftSaveTimer?.cancel();
+      await MonthDraftStore.instance.clear(widget.entry.id);
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -173,7 +228,7 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
-                              fontFamily: manropeFont,
+                              fontFamily: uiFont,
                               color: palette.heading,
                             ),
                           ),
@@ -218,11 +273,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                         padding: const EdgeInsets.only(top: 18, bottom: 6),
                         child: Text(
                           'NOTE',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.6,
-                            fontFamily: manropeFont,
+                            fontFamily: uiFont,
                             color: AppPalette.blueDeep,
                           ),
                         ),
@@ -232,7 +287,7 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                         child: TextField(
                           controller: _noteController,
                           maxLines: 2,
-                          style: TextStyle(fontSize: 13, fontFamily: manropeFont, color: palette.heading),
+                          style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
                           decoration: InputDecoration(
                             hintText: 'Optional note about this month',
                             filled: true,
@@ -272,11 +327,11 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(top: 18, bottom: 6),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.6,
-          fontFamily: manropeFont,
+          fontFamily: uiFont,
           color: AppPalette.blueDeep,
         ),
       ),
@@ -322,7 +377,7 @@ class _AccountRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                fontFamily: manropeFont,
+                fontFamily: uiFont,
                 color: palette.heading,
               ),
             ),
@@ -463,7 +518,7 @@ class _SummaryLine extends StatelessWidget {
     final style = TextStyle(
       fontSize: bold ? 14 : (small ? 12 : 12.5),
       fontWeight: bold ? FontWeight.w800 : (small ? FontWeight.w700 : FontWeight.normal),
-      fontFamily: manropeFont,
+      fontFamily: uiFont,
       color: color ?? (bold ? palette.heading : palette.text),
     );
     return Padding(

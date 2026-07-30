@@ -61,7 +61,7 @@ ThemeData _buildTheme(AppPalette palette, Brightness brightness) {
 
   return ThemeData(
     useMaterial3: true,
-    fontFamily: manropeFont,
+    fontFamily: uiFont,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: palette.bg,
     extensions: [palette],

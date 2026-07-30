@@ -49,7 +49,7 @@ class PlaceholderScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        fontFamily: manropeFont,
+                        fontFamily: uiFont,
                         color: palette.heading,
                       ),
                     ),
@@ -72,14 +72,14 @@ class PlaceholderScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          fontFamily: manropeFont,
+                          fontFamily: uiFont,
                           color: palette.heading,
                         ),
                       ),
                       if (subtitle != null)
                         Text(
                           subtitle!,
-                          style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+                          style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
                         ),
                       const SizedBox(height: 6),
                       ConstrainedBox(
@@ -87,7 +87,7 @@ class PlaceholderScreen extends StatelessWidget {
                         child: Text(
                           message,
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+                          style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
                         ),
                       ),
                       if (trailing != null) ...[const SizedBox(height: 16), trailing!],

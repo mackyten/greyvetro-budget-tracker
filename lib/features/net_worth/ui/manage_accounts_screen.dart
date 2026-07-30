@@ -30,7 +30,7 @@ class ManageAccountsScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  fontFamily: manropeFont,
+                  fontFamily: uiFont,
                   color: palette.heading,
                 ),
               ),
@@ -89,7 +89,7 @@ class ManageAccountsScreen extends StatelessWidget {
             final fieldLabelStyle = TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              fontFamily: manropeFont,
+              fontFamily: uiFont,
               color: palette.muted,
             );
             return Padding(
@@ -126,7 +126,7 @@ class ManageAccountsScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
-                              fontFamily: manropeFont,
+                              fontFamily: uiFont,
                               color: palette.heading,
                             ),
                           ),
@@ -137,7 +137,7 @@ class ManageAccountsScreen extends StatelessWidget {
                           TextField(
                             controller: nameController,
                             autofocus: true,
-                            style: TextStyle(fontSize: 13.5, fontFamily: manropeFont, color: palette.heading),
+                            style: TextStyle(fontSize: 13.5, fontFamily: uiFont, color: palette.heading),
                             decoration: InputDecoration(
                               hintText: 'e.g. Metrobank Savings',
                               filled: true,
@@ -216,7 +216,7 @@ class ManageAccountsScreen extends StatelessWidget {
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
-                                            fontFamily: manropeFont,
+                                            fontFamily: uiFont,
                                             color: palette.heading,
                                           ),
                                         ),
@@ -224,7 +224,7 @@ class ManageAccountsScreen extends StatelessWidget {
                                           'Show a bill/coin calculator shortcut for this account',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            fontFamily: manropeFont,
+                                            fontFamily: uiFont,
                                             color: palette.muted,
                                           ),
                                         ),
@@ -337,11 +337,11 @@ class _GroupHeader extends StatelessWidget {
       padding: const EdgeInsets.only(top: 18, bottom: 6),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.6,
-          fontFamily: manropeFont,
+          fontFamily: uiFont,
           color: AppPalette.blueDeep,
         ),
       ),
@@ -376,14 +376,14 @@ class _AccountTile extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    fontFamily: manropeFont,
+                    fontFamily: uiFont,
                     color: account.active ? palette.heading : palette.muted,
                     decoration: account.active ? null : TextDecoration.lineThrough,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+                  style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
                 ),
               ],
             ),

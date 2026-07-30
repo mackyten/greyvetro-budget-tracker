@@ -45,7 +45,7 @@ class MonthListScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 19,
                               fontWeight: FontWeight.w800,
-                              fontFamily: manropeFont,
+                              fontFamily: uiFont,
                               color: palette.heading,
                             ),
                           ),
@@ -53,7 +53,7 @@ class MonthListScreen extends StatelessWidget {
                             'Liquidity across all accounts',
                             style: TextStyle(
                               fontSize: 12,
-                              fontFamily: manropeFont,
+                              fontFamily: uiFont,
                               color: palette.muted,
                             ),
                           ),
@@ -87,7 +87,7 @@ class MonthListScreen extends StatelessWidget {
                             return Center(
                               child: Text(
                                 'No months tracked yet. Tap + to add one.',
-                                style: TextStyle(fontFamily: manropeFont, color: palette.muted),
+                                style: TextStyle(fontFamily: uiFont, color: palette.muted),
                               ),
                             );
                           }
@@ -200,10 +200,10 @@ class _MonthTile extends StatelessWidget {
     final headerStyle = TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w700,
-      fontFamily: manropeFont,
+      fontFamily: uiFont,
       color: palette.heading,
     );
-    final subtitleStyle = TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted);
+    final subtitleStyle = TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted);
     final netStyle = TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w800,

@@ -31,7 +31,7 @@ class DesignChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              fontFamily: manropeFont,
+              fontFamily: uiFont,
               color: active ? palette.heading : palette.text,
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Exact design tokens ported from the verified Claude Design artifact
 /// (`Greyvetro Budget Tracker.dc.html`) — not Material3-generated colors.
@@ -97,5 +98,7 @@ extension AppPaletteContext on BuildContext {
   AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
 }
 
-const manropeFont = 'Manrope';
+/// Resolving this triggers google_fonts to fetch/cache Poppins and registers
+/// it under the family name below — that's why it's a getter, not a const.
+final String uiFont = GoogleFonts.poppins().fontFamily!;
 const monoFont = 'JetBrains Mono';

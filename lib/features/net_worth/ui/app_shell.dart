@@ -97,7 +97,7 @@ class _BottomNav extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
-                              fontFamily: manropeFont,
+                              fontFamily: uiFont,
                               color: i == index ? AppPalette.blueDeep : palette.muted,
                             ),
                           ),

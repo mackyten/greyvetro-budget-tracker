@@ -31,13 +31,13 @@ class DashboardScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
-                  fontFamily: manropeFont,
+                  fontFamily: uiFont,
                   color: palette.heading,
                 ),
               ),
               Text(
                 'Trends across all tracked months',
-                style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+                style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
               ),
               const SizedBox(height: 14),
               Expanded(
@@ -60,7 +60,7 @@ class DashboardScreen extends StatelessWidget {
                           return Center(
                             child: Text(
                               'No months tracked yet.',
-                              style: TextStyle(fontFamily: manropeFont, color: palette.muted),
+                              style: TextStyle(fontFamily: uiFont, color: palette.muted),
                             ),
                           );
                         }
@@ -132,7 +132,7 @@ class _ChartCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              fontFamily: manropeFont,
+              fontFamily: uiFont,
               color: palette.heading,
             ),
           ),
@@ -156,7 +156,7 @@ class _EmptyChartMessage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Text(
         message,
-        style: TextStyle(fontSize: 12.5, fontFamily: manropeFont, color: palette.muted),
+        style: TextStyle(fontSize: 12.5, fontFamily: uiFont, color: palette.muted),
       ),
     );
   }

@@ -134,7 +134,7 @@ class _DrawerRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    fontFamily: manropeFont,
+                    fontFamily: uiFont,
                     color: color,
                   ),
                 ),
@@ -151,7 +151,7 @@ class _DrawerRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      fontFamily: manropeFont,
+                      fontFamily: uiFont,
                       color: palette.muted,
                     ),
                   ),
@@ -183,7 +183,7 @@ class _DisabledButton extends StatelessWidget {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          fontFamily: manropeFont,
+          fontFamily: uiFont,
           color: palette.muted,
         ),
       ),
@@ -211,13 +211,13 @@ class _DrawerHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.w800,
-              fontFamily: manropeFont,
+              fontFamily: uiFont,
               color: palette.heading,
             ),
           ),
           Text(
             'Net savings',
-            style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+            style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
           ),
           StreamBuilder<List<Account>>(
             stream: repository.watchAccounts(),
