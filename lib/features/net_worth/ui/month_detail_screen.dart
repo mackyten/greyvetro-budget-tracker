@@ -1,15 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../data/budget_repository.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'cash_counter_sheet.dart';
+import 'ghost_icon_button.dart';
 
-class MonthDetailScreen extends StatefulWidget {
-  const MonthDetailScreen({
+/// Opens the Month Detail editor as a large, draggable modal sheet (rather
+/// than a pushed screen) so it reads as "temporarily editing a record" while
+/// keeping Home visible/dimmed behind it.
+Future<void> showMonthDetailSheet(
+  BuildContext context, {
+  required BudgetRepository repository,
+  required MonthlyEntry entry,
+  required List<Account> accounts,
+  required MonthlyEntry? previous,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => MonthDetailSheet(
+      repository: repository,
+      entry: entry,
+      accounts: accounts,
+      previous: previous,
+    ),
+  );
+}
+
+class MonthDetailSheet extends StatefulWidget {
+  const MonthDetailSheet({
     super.key,
     required this.repository,
     required this.entry,
@@ -23,10 +49,10 @@ class MonthDetailScreen extends StatefulWidget {
   final MonthlyEntry? previous;
 
   @override
-  State<MonthDetailScreen> createState() => _MonthDetailScreenState();
+  State<MonthDetailSheet> createState() => _MonthDetailSheetState();
 }
 
-class _MonthDetailScreenState extends State<MonthDetailScreen> {
+class _MonthDetailSheetState extends State<MonthDetailSheet> {
   late final Map<String, TextEditingController> _controllers;
   late final TextEditingController _noteController;
   bool _saving = false;
@@ -102,49 +128,135 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
       accounts: widget.accounts,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(monthFormat.format(widget.entry.month)),
-        actions: [
-          IconButton(
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check),
-            tooltip: 'Save',
-            onPressed: _saving ? null : _save,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
+    final palette = context.palette;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Material(
+            color: palette.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
               children: [
-                _SectionHeader('Assets'),
-                for (final a in assets) _AccountRow(account: a, controller: _controllers[a.id]!),
-                _SectionHeader('Reserved & Liabilities'),
-                for (final a in reserved) _AccountRow(account: a, controller: _controllers[a.id]!),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text('Note', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: TextField(
-                    controller: _noteController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                const SizedBox(height: 8),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: palette.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: palette.border)),
+                  ),
+                  child: Row(
+                    children: [
+                      GhostIconButton(
+                        icon: Icons.close,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            monthFormat.format(widget.entry.month),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: manropeFont,
+                              color: palette.heading,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 38,
+                        height: 38,
+                        child: Material(
+                          color: AppPalette.blueDeep,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: _saving ? null : _save,
+                            child: _saving
+                                ? const Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.check, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    children: [
+                      _SectionHeader('Assets'),
+                      for (final a in assets)
+                        _AccountRow(account: a, controller: _controllers[a.id]!),
+                      _SectionHeader('Reserved & Liabilities'),
+                      for (final a in reserved)
+                        _AccountRow(account: a, controller: _controllers[a.id]!),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 18, bottom: 6),
+                        child: Text(
+                          'NOTE',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            fontFamily: manropeFont,
+                            color: AppPalette.blueDeep,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: TextField(
+                          controller: _noteController,
+                          maxLines: 2,
+                          style: TextStyle(fontSize: 13, fontFamily: manropeFont, color: palette.heading),
+                          decoration: InputDecoration(
+                            hintText: 'Optional note about this month',
+                            filled: true,
+                            fillColor: palette.surfaceAlt,
+                            contentPadding: const EdgeInsets.all(10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: palette.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: palette.border),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _SummaryBar(summary: summary),
               ],
             ),
-          ),
-          _SummaryBar(summary: summary),
-        ],
+          );
+        },
       ),
     );
   }
@@ -157,13 +269,16 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      padding: const EdgeInsets.only(top: 18, bottom: 6),
       child: Text(
-        title,
-        style: Theme.of(context)
-            .textTheme
-            .titleSmall
-            ?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
+          fontFamily: manropeFont,
+          color: AppPalette.blueDeep,
+        ),
       ),
     );
   }
@@ -177,49 +292,105 @@ class _AccountRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final icon = account.section == AccountSection.asset
         ? Icons.account_balance_wallet_outlined
         : account.reservedKind == ReservedKind.creditCard
-            ? Icons.credit_card
+            ? Icons.credit_card_outlined
             : Icons.savings_outlined;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(width: 12),
-          Expanded(child: Text(account.name)),
-          if (account.cashCounter)
-            IconButton(
-              icon: const Icon(Icons.calculate_outlined),
-              tooltip: 'Count cash',
-              visualDensity: VisualDensity.compact,
-              onPressed: () async {
-                final total = await showModalBottomSheet<double>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => const CashCounterSheet(),
-                );
-                if (total != null) {
-                  controller.text = total.toStringAsFixed(2);
-                }
-              },
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: palette.surfaceAlt,
+              border: Border.all(color: palette.border),
+              borderRadius: BorderRadius.circular(10),
             ),
-          SizedBox(
-            width: 140,
-            child: TextField(
-              controller: controller,
-              textAlign: TextAlign.end,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-              ],
-              decoration: const InputDecoration(
-                prefixText: '₱ ',
-                isDense: true,
-                border: OutlineInputBorder(),
+            child: Icon(icon, size: 18, color: palette.muted),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              account.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                fontFamily: manropeFont,
+                color: palette.heading,
               ),
+            ),
+          ),
+          if (account.cashCounter) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: Material(
+                color: palette.surfaceAlt,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: palette.border),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    final total = await showModalBottomSheet<double>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => const CashCounterSheet(),
+                    );
+                    if (total != null) {
+                      controller.text = total.toStringAsFixed(2);
+                    }
+                  },
+                  child: const Icon(Icons.calculate, size: 16, color: AppPalette.blueDeep),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 8),
+          Container(
+            width: 126,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: palette.surfaceAlt,
+              border: Border.all(color: palette.border),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Text('₱', style: TextStyle(fontSize: 12, fontFamily: monoFont, color: palette.muted)),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    textAlign: TextAlign.end,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                    ],
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: monoFont,
+                      color: palette.heading,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -235,67 +406,73 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final delta = summary.currentMonthSaved;
-    final pct = summary.momChangePct;
     final deltaColor = delta == null
-        ? null
+        ? palette.muted
         : delta >= 0
-            ? Colors.green.shade700
-            : Colors.red.shade700;
+            ? AppPalette.ok
+            : AppPalette.error;
 
-    return Material(
-      elevation: 8,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SummaryLine('Total Assets', currencyFormat.format(summary.totalAssets)),
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        border: Border(top: BorderSide(color: palette.border)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, -6))],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SummaryLine('Total Assets', currencyFormat.format(summary.totalAssets)),
+          _SummaryLine(
+            'Reserved & Liabilities',
+            currencyFormat.format(summary.totalReservedLiabilities),
+          ),
+          Container(height: 1, color: palette.border, margin: const EdgeInsets.symmetric(vertical: 6)),
+          _SummaryLine(
+            'Net Savings',
+            currencyFormat.format(summary.netSavings),
+            bold: true,
+          ),
+          if (delta != null)
             _SummaryLine(
-              'Total Reserved & Liabilities',
-              currencyFormat.format(summary.totalReservedLiabilities),
+              'Current month saved',
+              formatSignedDelta(delta, summary.momChangePct),
+              color: deltaColor,
+              small: true,
             ),
-            const Divider(),
-            _SummaryLine(
-              'Net Savings',
-              currencyFormat.format(summary.netSavings),
-              bold: true,
-            ),
-            if (delta != null)
-              _SummaryLine(
-                'Current month saved',
-                '${delta >= 0 ? '+' : ''}${currencyFormat.format(delta)}'
-                    '${pct != null ? '  (${percentFormat.format(pct)})' : ''}',
-                color: deltaColor,
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
 class _SummaryLine extends StatelessWidget {
-  const _SummaryLine(this.label, this.value, {this.bold = false, this.color});
+  const _SummaryLine(this.label, this.value, {this.bold = false, this.small = false, this.color});
 
   final String label;
   final String value;
   final bool bold;
+  final bool small;
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final style = TextStyle(
-      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-      color: color,
+      fontSize: bold ? 14 : (small ? 12 : 12.5),
+      fontWeight: bold ? FontWeight.w800 : (small ? FontWeight.w700 : FontWeight.normal),
+      fontFamily: manropeFont,
+      color: color ?? (bold ? palette.heading : palette.text),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: style),
-          Text(value, style: style),
+          Text(value, style: style.copyWith(fontFamily: monoFont)),
         ],
       ),
     );

@@ -1,116 +1,141 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
+import '../../../core/theme_controller.dart';
 import '../data/budget_repository.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
-import 'dashboard_screen.dart';
-import 'manage_accounts_screen.dart';
+import 'app_drawer.dart';
+import 'gradient_fab.dart';
+import 'ghost_icon_button.dart';
 import 'month_detail_screen.dart';
 
 class MonthListScreen extends StatelessWidget {
-  const MonthListScreen({super.key, required this.repository});
+  const MonthListScreen({
+    super.key,
+    required this.repository,
+    required this.themeController,
+  });
 
   final BudgetRepository repository;
+  final ThemeController themeController;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Net Worth / Liquidity Tracker'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.insights),
-            tooltip: 'Dashboard',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => DashboardScreen(repository: repository),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Manage accounts',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ManageAccountsScreen(repository: repository),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: StreamBuilder<List<Account>>(
-        stream: repository.watchAccounts(),
-        builder: (context, accountsSnap) {
-          if (!accountsSnap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final accounts = accountsSnap.data!;
-          return StreamBuilder<List<MonthlyEntry>>(
-            stream: repository.watchMonthlyEntries(),
-            builder: (context, entriesSnap) {
-              if (!entriesSnap.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final entries = List<MonthlyEntry>.from(entriesSnap.data!)
-                ..sort((a, b) => a.month.compareTo(b.month));
-
-              if (entries.isEmpty) {
-                return const Center(
-                  child: Text('No months tracked yet. Tap + to add one.'),
-                );
-              }
-
-              final summaries = <MonthSummary>[
-                for (var i = 0; i < entries.length; i++)
-                  MonthSummary.compute(
-                    entry: entries[i],
-                    previous: i > 0 ? entries[i - 1] : null,
-                    accounts: accounts,
-                  ),
-              ].reversed.toList();
-
-              return ListView.separated(
-                itemCount: summaries.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final summary = summaries[index];
-                  final previous = entries
-                      .where((e) => e.month.isBefore(summary.entry.month))
-                      .fold<MonthlyEntry?>(
-                        null,
-                        (prev, e) => prev == null || e.month.isAfter(prev.month)
-                            ? e
-                            : prev,
-                      );
-                  return _MonthTile(
-                    summary: summary,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => MonthDetailScreen(
-                          repository: repository,
-                          entry: summary.entry,
-                          accounts: accounts,
-                          previous: previous,
-                        ),
+      drawer: AppDrawer(repository: repository, themeController: themeController),
+      body: Builder(
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Net Worth Tracker',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: manropeFont,
+                              color: palette.heading,
+                            ),
+                          ),
+                          Text(
+                            'Liquidity across all accounts',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: manropeFont,
+                              color: palette.muted,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              );
-            },
-          );
-        },
+                    GhostIconButton(
+                      icon: Icons.menu,
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: StreamBuilder<List<Account>>(
+                    stream: repository.watchAccounts(),
+                    builder: (context, accountsSnap) {
+                      if (!accountsSnap.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final accounts = accountsSnap.data!;
+                      return StreamBuilder<List<MonthlyEntry>>(
+                        stream: repository.watchMonthlyEntries(),
+                        builder: (context, entriesSnap) {
+                          if (!entriesSnap.hasData) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          final entries = entriesSnap.data!;
+
+                          if (entries.isEmpty) {
+                            return Center(
+                              child: Text(
+                                'No months tracked yet. Tap + to add one.',
+                                style: TextStyle(fontFamily: manropeFont, color: palette.muted),
+                              ),
+                            );
+                          }
+
+                          final summaries = computeMonthSummaries(
+                            entries: entries,
+                            accounts: accounts,
+                          ).reversed.toList();
+
+                          return ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 96),
+                            itemCount: summaries.length,
+                            itemBuilder: (context, index) {
+                              final summary = summaries[index];
+                              final previous = entries
+                                  .where((e) => e.month.isBefore(summary.entry.month))
+                                  .fold<MonthlyEntry?>(
+                                    null,
+                                    (prev, e) => prev == null || e.month.isAfter(prev.month)
+                                        ? e
+                                        : prev,
+                                  );
+                              return _MonthTile(
+                                summary: summary,
+                                onTap: () => showMonthDetailSheet(
+                                  context,
+                                  repository: repository,
+                                  entry: summary.entry,
+                                  accounts: accounts,
+                                  previous: previous,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       floatingActionButton: StreamBuilder<List<MonthlyEntry>>(
         stream: repository.watchMonthlyEntries(),
         builder: (context, snap) {
-          return FloatingActionButton(
-            onPressed: () => _addNextMonth(context, snap.data ?? const []),
-            tooltip: 'Add month',
-            child: const Icon(Icons.add),
-          );
+          return GradientFab(onPressed: () => _addNextMonth(context, snap.data ?? const []));
         },
       ),
     );
@@ -146,15 +171,12 @@ class MonthListScreen extends StatelessWidget {
     final accounts = await repository.watchAccounts().first;
 
     if (!context.mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MonthDetailScreen(
-          repository: repository,
-          entry: entry,
-          accounts: accounts,
-          previous: previous,
-        ),
-      ),
+    showMonthDetailSheet(
+      context,
+      repository: repository,
+      entry: entry,
+      accounts: accounts,
+      previous: previous,
     );
   }
 }
@@ -167,34 +189,76 @@ class _MonthTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final delta = summary.currentMonthSaved;
     final deltaColor = delta == null
-        ? null
+        ? palette.muted
         : delta >= 0
-            ? Colors.green.shade700
-            : Colors.red.shade700;
+            ? AppPalette.ok
+            : AppPalette.error;
 
-    return ListTile(
-      onTap: onTap,
-      title: Text(monthFormat.format(summary.entry.month)),
-      subtitle: Text(
-        'Assets ${currencyFormat.format(summary.totalAssets)}  ·  '
-        'Reserved & Liabilities ${currencyFormat.format(summary.totalReservedLiabilities)}',
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            currencyFormat.format(summary.netSavings),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (delta != null)
-            Text(
-              '${delta >= 0 ? '+' : ''}${currencyFormat.format(delta)}',
-              style: TextStyle(color: deltaColor, fontSize: 12),
+    final headerStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      fontFamily: manropeFont,
+      color: palette.heading,
+    );
+    final subtitleStyle = TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted);
+    final netStyle = TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w800,
+      fontFamily: monoFont,
+      color: palette.heading,
+    );
+    final deltaStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      fontFamily: monoFont,
+      color: deltaColor,
+    );
+
+    final leftColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(monthFormat.format(summary.entry.month), style: headerStyle),
+        Text(
+          'Assets ${currencyFormat.format(summary.totalAssets)} · '
+          'Reserved ${currencyFormat.format(summary.totalReservedLiabilities)}',
+          style: subtitleStyle,
+        ),
+      ],
+    );
+
+    final rightColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(currencyFormat.format(summary.netSavings), style: netStyle),
+        if (delta != null) Text(formatSignedDelta(delta, summary.momChangePct), style: deltaStyle),
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: palette.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: palette.border),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: leftColumn),
+                rightColumn,
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 
 class _Denomination {
-  const _Denomination(this.label, this.value);
+  const _Denomination(this.label, this.value, this.type);
 
   final String label;
   final double value;
+  final String type;
 }
 
 /// Philippine peso bills and coins. Centavo coins are intentionally omitted
@@ -15,16 +17,16 @@ class _Denomination {
 /// Note the two ₱20 entries share a value but have distinct labels; state is
 /// keyed by list index below, so the duplicate value is safe.
 const _denominations = <_Denomination>[
-  _Denomination('₱1000', 1000),
-  _Denomination('₱500', 500),
-  _Denomination('₱200', 200),
-  _Denomination('₱100', 100),
-  _Denomination('₱50', 50),
-  _Denomination('₱20 bill', 20),
-  _Denomination('₱20 coin', 20),
-  _Denomination('₱10 coin', 10),
-  _Denomination('₱5 coin', 5),
-  _Denomination('₱1 coin', 1),
+  _Denomination('₱1000', 1000, 'Bill'),
+  _Denomination('₱500', 500, 'Bill'),
+  _Denomination('₱200', 200, 'Bill'),
+  _Denomination('₱100', 100, 'Bill'),
+  _Denomination('₱50', 50, 'Bill'),
+  _Denomination('₱20', 20, 'Bill'),
+  _Denomination('₱20', 20, 'Coin'),
+  _Denomination('₱10', 10, 'Coin'),
+  _Denomination('₱5', 5, 'Coin'),
+  _Denomination('₱1', 1, 'Coin'),
 ];
 
 /// A standalone denomination calculator: enter how many of each bill/coin
@@ -78,56 +80,128 @@ class _CashCounterSheetState extends State<CashCounterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SafeArea(
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+          child: Container(
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Cash Counter',
-                      style: Theme.of(context).textTheme.titleLarge,
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: palette.border,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    TextButton(onPressed: _clear, child: const Text('Clear')),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                for (var i = 0; i < _denominations.length; i++)
-                  _DenominationRow(
-                    denomination: _denominations[i],
-                    controller: _qtyControllers[i],
-                    subtotal: _qtyAt(i) * _denominations[i].value,
                   ),
-                const Divider(),
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
                     Text(
-                      currencyFormat.format(_total),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      'Cash counter',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: manropeFont,
+                        color: palette.heading,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _clear,
+                      style: TextButton.styleFrom(foregroundColor: AppPalette.blueDeep),
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(_total),
-                  child: const Text('Use total'),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < _denominations.length; i++)
+                          _DenominationRow(
+                            denomination: _denominations[i],
+                            controller: _qtyControllers[i],
+                            subtotal: _qtyAt(i) * _denominations[i].value,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.only(top: 12),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: palette.border)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: manropeFont,
+                          color: palette.heading,
+                        ),
+                      ),
+                      Text(
+                        currencyFormat.format(_total),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: monoFont,
+                          color: palette.heading,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            side: BorderSide(color: palette.border),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            foregroundColor: palette.heading,
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(context).pop(_total),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            backgroundColor: AppPalette.blueDeep,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Use total'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -151,29 +225,75 @@ class _DenominationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+    final palette = context.palette;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: palette.border))),
       child: Row(
         children: [
-          SizedBox(width: 90, child: Text(denomination.label)),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  denomination.label,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: monoFont,
+                    color: palette.heading,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: palette.surfaceAlt,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    denomination.type,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: manropeFont,
+                      color: palette.muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           SizedBox(
-            width: 70,
+            width: 52,
             child: TextField(
               controller: controller,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
+              style: TextStyle(fontSize: 13, fontFamily: manropeFont, color: palette.heading),
+              decoration: InputDecoration(
                 isDense: true,
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: palette.surfaceAlt,
+                contentPadding: const EdgeInsets.symmetric(vertical: 7),
+                hintText: '0',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: palette.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: palette.border),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          SizedBox(
+            width: 86,
             child: Text(
               currencyFormat.format(subtotal),
               textAlign: TextAlign.end,
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: palette.text),
             ),
           ),
         ],

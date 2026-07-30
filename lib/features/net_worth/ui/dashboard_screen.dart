@@ -2,21 +2,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../data/budget_repository.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
-
-/// Fixed, colorblind-safety-validated categorical pair, used only where two
-/// distinct named series appear on the same chart (assets vs. liabilities).
-/// Everywhere else color encodes magnitude (one hue) or reuses the app's own
-/// green/red saved-amount convention, so this pair intentionally isn't the
-/// app's brand color.
-const _seriesA = Color(0xFF2A78D6); // blue
-const _seriesADark = Color(0xFF3987E5);
-const _seriesB = Color(0xFFEB6834); // orange
-const _seriesBDark = Color(0xFFD95926);
 
 final _axisMonthFormat = DateFormat('MMM yy');
 
@@ -27,64 +18,90 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: StreamBuilder<List<Account>>(
-        stream: repository.watchAccounts(),
-        builder: (context, accountsSnap) {
-          if (!accountsSnap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final accounts = accountsSnap.data!;
-          return StreamBuilder<List<MonthlyEntry>>(
-            stream: repository.watchMonthlyEntries(),
-            builder: (context, entriesSnap) {
-              if (!entriesSnap.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final entries = List<MonthlyEntry>.from(entriesSnap.data!)
-                ..sort((a, b) => a.month.compareTo(b.month));
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Dashboard',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: manropeFont,
+                  color: palette.heading,
+                ),
+              ),
+              Text(
+                'Trends across all tracked months',
+                style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: StreamBuilder<List<Account>>(
+                  stream: repository.watchAccounts(),
+                  builder: (context, accountsSnap) {
+                    if (!accountsSnap.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final accounts = accountsSnap.data!;
+                    return StreamBuilder<List<MonthlyEntry>>(
+                      stream: repository.watchMonthlyEntries(),
+                      builder: (context, entriesSnap) {
+                        if (!entriesSnap.hasData) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        final entries = entriesSnap.data!;
 
-              if (entries.isEmpty) {
-                return const Center(child: Text('No months tracked yet.'));
-              }
+                        if (entries.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No months tracked yet.',
+                              style: TextStyle(fontFamily: manropeFont, color: palette.muted),
+                            ),
+                          );
+                        }
 
-              final summaries = <MonthSummary>[
-                for (var i = 0; i < entries.length; i++)
-                  MonthSummary.compute(
-                    entry: entries[i],
-                    previous: i > 0 ? entries[i - 1] : null,
-                    accounts: accounts,
-                  ),
-              ];
+                        final summaries = computeMonthSummaries(
+                          entries: entries,
+                          accounts: accounts,
+                        );
 
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _ChartCard(
-                    title: 'Net worth over time',
-                    child: _NetWorthTrendChart(summaries: summaries),
-                  ),
-                  _ChartCard(
-                    title: 'Assets vs. Reserved & Liabilities',
-                    child: _AssetsVsLiabilitiesChart(summaries: summaries),
-                  ),
-                  _ChartCard(
-                    title: 'Monthly saved amount',
-                    child: _MonthlySavedChart(summaries: summaries),
-                  ),
-                  _ChartCard(
-                    title: 'Latest balance breakdown',
-                    child: _LatestBalanceBreakdownChart(
-                      accounts: accounts,
-                      latestEntry: entries.last,
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        },
+                        return ListView(
+                          padding: const EdgeInsets.only(bottom: 96),
+                          children: [
+                            _ChartCard(
+                              title: 'Net worth over time',
+                              child: _NetWorthTrendChart(summaries: summaries),
+                            ),
+                            _ChartCard(
+                              title: 'Assets vs. Reserved & Liabilities',
+                              child: _AssetsVsLiabilitiesChart(summaries: summaries),
+                            ),
+                            _ChartCard(
+                              title: 'Monthly saved amount',
+                              child: _MonthlySavedChart(summaries: summaries),
+                            ),
+                            _ChartCard(
+                              title: 'Latest balance breakdown',
+                              child: _LatestBalanceBreakdownChart(
+                                accounts: accounts,
+                                latestEntry: summaries.last.entry,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -98,24 +115,30 @@ class _ChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+    final palette = context.palette;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              fontFamily: manropeFont,
+              color: palette.heading,
             ),
-            const SizedBox(height: 16),
-            child,
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
@@ -128,9 +151,13 @@ class _EmptyChartMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+      child: Text(
+        message,
+        style: TextStyle(fontSize: 12.5, fontFamily: manropeFont, color: palette.muted),
+      ),
     );
   }
 }
@@ -215,7 +242,7 @@ class _NetWorthTrendChart extends StatelessWidget {
     if (summaries.length < 2) {
       return const _EmptyChartMessage('Track at least 2 months to see the net worth trend.');
     }
-    final primary = Theme.of(context).colorScheme.primary;
+    const primary = AppPalette.blueDeep;
     final gridColor = Theme.of(context).colorScheme.outlineVariant;
     final spots = [
       for (var i = 0; i < summaries.length; i++) FlSpot(i.toDouble(), summaries[i].netSavings),
@@ -273,9 +300,8 @@ class _AssetsVsLiabilitiesChart extends StatelessWidget {
     if (summaries.length < 2) {
       return const _EmptyChartMessage('Track at least 2 months to compare assets and liabilities.');
     }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final assetColor = isDark ? _seriesADark : _seriesA;
-    final liabilityColor = isDark ? _seriesBDark : _seriesB;
+    const assetColor = AppPalette.colorblindBlue;
+    const liabilityColor = AppPalette.colorblindOrange;
     final gridColor = Theme.of(context).colorScheme.outlineVariant;
 
     final assetSpots = [
@@ -363,7 +389,7 @@ class _MonthlySavedChart extends StatelessWidget {
                 barRods: [
                   BarChartRodData(
                     toY: p.$2,
-                    color: p.$2 >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                    color: p.$2 >= 0 ? AppPalette.ok : AppPalette.error,
                     width: 14,
                     borderRadius: BorderRadius.circular(3),
                   ),

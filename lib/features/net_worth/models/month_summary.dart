@@ -63,3 +63,21 @@ class MonthSummary {
     );
   }
 }
+
+/// Computes one [MonthSummary] per entry, in chronological (ascending) order,
+/// each diffed against the entry immediately before it.
+List<MonthSummary> computeMonthSummaries({
+  required List<MonthlyEntry> entries,
+  required List<Account> accounts,
+}) {
+  final sorted = List<MonthlyEntry>.from(entries)
+    ..sort((a, b) => a.month.compareTo(b.month));
+  return [
+    for (var i = 0; i < sorted.length; i++)
+      MonthSummary.compute(
+        entry: sorted[i],
+        previous: i > 0 ? sorted[i - 1] : null,
+        accounts: accounts,
+      ),
+  ];
+}

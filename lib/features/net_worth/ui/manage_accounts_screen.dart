@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/design_tokens.dart';
 import '../data/budget_repository.dart';
 import '../models/account.dart';
+import 'design_chip.dart';
+import 'gradient_fab.dart';
+import 'pill_switch.dart';
 
 class ManageAccountsScreen extends StatelessWidget {
   const ManageAccountsScreen({super.key, required this.repository});
@@ -10,41 +14,62 @@ class ManageAccountsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage accounts')),
-      body: StreamBuilder<List<Account>>(
-        stream: repository.watchAccounts(),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final accounts = List<Account>.from(snap.data!)
-            ..sort((a, b) => a.order.compareTo(b.order));
-          final assets =
-              accounts.where((a) => a.section == AccountSection.asset).toList();
-          final reserved = accounts
-              .where((a) => a.section == AccountSection.reservedLiability)
-              .toList();
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: palette.border)),
+              ),
+              child: Text(
+                'Accounts',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: manropeFont,
+                  color: palette.heading,
+                ),
+              ),
+            ),
+            Expanded(
+              child: StreamBuilder<List<Account>>(
+                stream: repository.watchAccounts(),
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final accounts = List<Account>.from(snap.data!)
+                    ..sort((a, b) => a.order.compareTo(b.order));
+                  final assets =
+                      accounts.where((a) => a.section == AccountSection.asset).toList();
+                  final reserved = accounts
+                      .where((a) => a.section == AccountSection.reservedLiability)
+                      .toList();
 
-          return ListView(
-            children: [
-              const _GroupHeader('Assets'),
-              for (final a in assets) _AccountTile(account: a, repository: repository),
-              const _GroupHeader('Reserved & Liabilities'),
-              for (final a in reserved) _AccountTile(account: a, repository: repository),
-            ],
-          );
-        },
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 96),
+                    children: [
+                      const _GroupHeader('Assets'),
+                      for (final a in assets) _AccountTile(account: a, repository: repository),
+                      const _GroupHeader('Reserved & Liabilities'),
+                      for (final a in reserved) _AccountTile(account: a, repository: repository),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddDialog(context, repository),
-        tooltip: 'Add account',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: GradientFab(onPressed: () => _showAddSheet(context, repository)),
     );
   }
 
-  Future<void> _showAddDialog(
+  Future<void> _showAddSheet(
     BuildContext context,
     BudgetRepository repository,
   ) async {
@@ -53,96 +78,232 @@ class ManageAccountsScreen extends StatelessWidget {
     ReservedKind reservedKind = ReservedKind.reserved;
     bool cashCounter = false;
 
-    await showDialog<void>(
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Add account'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    autofocus: true,
+          builder: (sheetContext, setSheetState) {
+            final palette = sheetContext.palette;
+            final fieldLabelStyle = TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              fontFamily: manropeFont,
+              color: palette.muted,
+            );
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+              child: SafeArea(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(sheetContext).size.height * 0.9,
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<AccountSection>(
-                    initialValue: section,
-                    decoration: const InputDecoration(labelText: 'Section'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: AccountSection.asset,
-                        child: Text('Asset'),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: palette.surface,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: palette.border,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'Add account',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: manropeFont,
+                              color: palette.heading,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 14, bottom: 6),
+                            child: Text('Name', style: fieldLabelStyle),
+                          ),
+                          TextField(
+                            controller: nameController,
+                            autofocus: true,
+                            style: TextStyle(fontSize: 13.5, fontFamily: manropeFont, color: palette.heading),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. Metrobank Savings',
+                              filled: true,
+                              fillColor: palette.surfaceAlt,
+                              contentPadding: const EdgeInsets.all(11),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: palette.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: palette.border),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 14, bottom: 6),
+                            child: Text('Section', style: fieldLabelStyle),
+                          ),
+                          Row(
+                            children: [
+                              DesignChip(
+                                label: 'Asset',
+                                active: section == AccountSection.asset,
+                                onTap: () => setSheetState(() => section = AccountSection.asset),
+                              ),
+                              const SizedBox(width: 8),
+                              DesignChip(
+                                label: 'Reserved / Liability',
+                                active: section == AccountSection.reservedLiability,
+                                onTap: () =>
+                                    setSheetState(() => section = AccountSection.reservedLiability),
+                              ),
+                            ],
+                          ),
+                          if (section == AccountSection.reservedLiability) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: 14, bottom: 6),
+                              child: Text('Kind', style: fieldLabelStyle),
+                            ),
+                            Row(
+                              children: [
+                                DesignChip(
+                                  label: 'Reserved fund',
+                                  active: reservedKind == ReservedKind.reserved,
+                                  onTap: () =>
+                                      setSheetState(() => reservedKind = ReservedKind.reserved),
+                                ),
+                                const SizedBox(width: 8),
+                                DesignChip(
+                                  label: 'Credit card',
+                                  active: reservedKind == ReservedKind.creditCard,
+                                  onTap: () =>
+                                      setSheetState(() => reservedKind = ReservedKind.creditCard),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (section == AccountSection.asset)
+                            Container(
+                              margin: const EdgeInsets.only(top: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: palette.surfaceAlt,
+                                border: Border.all(color: palette.border),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Cash denomination counter',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: manropeFont,
+                                            color: palette.heading,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Show a bill/coin calculator shortcut for this account',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontFamily: manropeFont,
+                                            color: palette.muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  PillSwitch(
+                                    value: cashCounter,
+                                    onChanged: (v) => setSheetState(() => cashCounter = v),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => Navigator.of(sheetContext).pop(),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 13),
+                                      side: BorderSide(color: palette.border),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      foregroundColor: palette.heading,
+                                    ),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed: () async {
+                                      final name = nameController.text.trim();
+                                      if (name.isEmpty) return;
+                                      final accounts = await repository.watchAccounts().first;
+                                      final id =
+                                          _uniqueSlug(name, accounts.map((a) => a.id).toSet());
+                                      final order = accounts.isEmpty
+                                          ? 0
+                                          : accounts.map((a) => a.order).reduce((a, b) => a > b ? a : b) +
+                                              1;
+                                      await repository.addAccount(
+                                        Account(
+                                          id: id,
+                                          name: name,
+                                          section: section,
+                                          reservedKind: section == AccountSection.reservedLiability
+                                              ? reservedKind
+                                              : null,
+                                          order: order,
+                                          cashCounter:
+                                              section == AccountSection.asset ? cashCounter : false,
+                                        ),
+                                      );
+                                      if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 13),
+                                      backgroundColor: AppPalette.blueDeep,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text('Add account'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      DropdownMenuItem(
-                        value: AccountSection.reservedLiability,
-                        child: Text('Reserved & Liability'),
-                      ),
-                    ],
-                    onChanged: (v) => setDialogState(() => section = v!),
+                    ),
                   ),
-                  if (section == AccountSection.reservedLiability) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<ReservedKind>(
-                      initialValue: reservedKind,
-                      decoration: const InputDecoration(labelText: 'Kind'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: ReservedKind.reserved,
-                          child: Text('Reserved fund'),
-                        ),
-                        DropdownMenuItem(
-                          value: ReservedKind.creditCard,
-                          child: Text('Credit card'),
-                        ),
-                      ],
-                      onChanged: (v) => setDialogState(() => reservedKind = v!),
-                    ),
-                  ],
-                  if (section == AccountSection.asset) ...[
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Cash denomination counter'),
-                      value: cashCounter,
-                      onChanged: (v) => setDialogState(() => cashCounter = v),
-                    ),
-                  ],
-                ],
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () async {
-                    final name = nameController.text.trim();
-                    if (name.isEmpty) return;
-                    final accounts = await repository.watchAccounts().first;
-                    final id = _uniqueSlug(name, accounts.map((a) => a.id).toSet());
-                    final order = accounts.isEmpty
-                        ? 0
-                        : accounts.map((a) => a.order).reduce((a, b) => a > b ? a : b) + 1;
-                    await repository.addAccount(
-                      Account(
-                        id: id,
-                        name: name,
-                        section: section,
-                        reservedKind:
-                            section == AccountSection.reservedLiability ? reservedKind : null,
-                        order: order,
-                        cashCounter: section == AccountSection.asset ? cashCounter : false,
-                      ),
-                    );
-                    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                  },
-                  child: const Text('Add'),
-                ),
-              ],
             );
           },
         );
@@ -173,13 +334,16 @@ class _GroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      padding: const EdgeInsets.only(top: 18, bottom: 6),
       child: Text(
-        title,
-        style: Theme.of(context)
-            .textTheme
-            .titleSmall
-            ?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
+          fontFamily: manropeFont,
+          color: AppPalette.blueDeep,
+        ),
       ),
     );
   }
@@ -193,38 +357,79 @@ class _AccountTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        account.name,
-        style: account.active ? null : const TextStyle(decoration: TextDecoration.lineThrough),
-      ),
-      subtitle: account.reservedKind != null
-          ? Text(account.reservedKind == ReservedKind.creditCard ? 'Credit card' : 'Reserved fund')
-          : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+    final palette = context.palette;
+    final subtitle = account.reservedKind != null
+        ? (account.reservedKind == ReservedKind.creditCard ? 'Credit card' : 'Reserved fund')
+        : (account.cashCounter ? 'Cash counter enabled' : 'Cash counter off');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: palette.border))),
+      child: Row(
         children: [
-          if (account.section == AccountSection.asset)
-            IconButton(
-              tooltip: account.cashCounter
-                  ? 'Cash counter enabled — tap to disable'
-                  : 'Enable cash denomination counter',
-              visualDensity: VisualDensity.compact,
-              icon: Icon(
-                Icons.calculate,
-                color: account.cashCounter
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline,
-              ),
-              onPressed: () => repository.updateAccount(
-                account.copyWith(cashCounter: !account.cashCounter),
-              ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  account.name,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: manropeFont,
+                    color: account.active ? palette.heading : palette.muted,
+                    decoration: account.active ? null : TextDecoration.lineThrough,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, fontFamily: manropeFont, color: palette.muted),
+                ),
+              ],
             ),
-          Switch(
+          ),
+          if (account.section == AccountSection.asset) ...[
+            _CashCounterToggle(account: account, repository: repository),
+            const SizedBox(width: 6),
+          ],
+          PillSwitch(
             value: account.active,
             onChanged: (value) => repository.setAccountActive(account.id, value),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CashCounterToggle extends StatelessWidget {
+  const _CashCounterToggle({required this.account, required this.repository});
+
+  final Account account;
+  final BudgetRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final enabled = account.cashCounter;
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: Material(
+        color: enabled ? AppPalette.blueDeep.withValues(alpha: 0.13) : palette.surfaceAlt,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(9),
+          side: BorderSide(color: enabled ? AppPalette.blueDeep : palette.border),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(9),
+          onTap: () => repository.updateAccount(account.copyWith(cashCounter: !enabled)),
+          child: Icon(
+            Icons.calculate,
+            size: 16,
+            color: enabled ? AppPalette.blueDeep : palette.muted,
+          ),
+        ),
       ),
     );
   }
