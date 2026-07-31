@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'biometric_auth.dart';
 import 'pin_keypad.dart';
 import 'pin_store.dart';
 
@@ -76,6 +77,34 @@ class _UnlockScreenState extends State<_UnlockScreen> {
   String _buffer = '';
   String? _error;
   bool _checking = false;
+  bool _biometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricState();
+  }
+
+  Future<void> _loadBiometricState() async {
+    final enabled = await PinStore.instance.isBiometricEnabled();
+    final available = await BiometricAuth.instance.isAvailable();
+    if (!mounted) return;
+    setState(() => _biometricEnabled = enabled && available);
+  }
+
+  Future<void> _onBiometricTap() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    final ok = await BiometricAuth.instance.authenticate(
+      reason: 'Unlock Net Worth Tracker',
+    );
+    if (!mounted) return;
+    if (ok) {
+      widget.onUnlocked();
+    } else {
+      setState(() => _checking = false);
+    }
+  }
 
   Future<void> _onDigit(String digit) async {
     if (_checking || _buffer.length >= 4) return;
@@ -113,6 +142,7 @@ class _UnlockScreenState extends State<_UnlockScreen> {
       errorText: _error,
       onDigit: _onDigit,
       onBackspace: _onBackspace,
+      onBiometricTap: _biometricEnabled ? _onBiometricTap : null,
     );
   }
 }

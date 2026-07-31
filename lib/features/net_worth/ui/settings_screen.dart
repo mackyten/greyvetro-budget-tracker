@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/design_tokens.dart';
+import '../../../core/pin_lock/biometric_auth.dart';
 import '../../../core/pin_lock/create_pin_screen.dart';
 import '../../../core/pin_lock/pin_store.dart';
 import '../../../core/pin_lock/verify_pin_screen.dart';
 import '../../../core/theme_controller.dart';
+import '../data/net_worth_preferences.dart';
 import 'design_chip.dart';
 import 'ghost_icon_button.dart';
+import 'milestones_settings_screen.dart';
 import 'pill_switch.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -21,20 +26,56 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _loadingPin = true;
   bool _pinEnabled = false;
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+
+  final _inflationRateController = TextEditingController();
+  Timer? _inflationSaveTimer;
 
   @override
   void initState() {
     super.initState();
     _loadPinState();
+    _loadInflationRate();
+  }
+
+  Future<void> _loadInflationRate() async {
+    final rate = await NetWorthPreferences.instance.getAnnualInflationRate();
+    if (!mounted) return;
+    _inflationRateController.text = rate == 0 ? '' : (rate * 100).toStringAsFixed(1);
+  }
+
+  void _onInflationRateChanged(String text) {
+    _inflationSaveTimer?.cancel();
+    _inflationSaveTimer = Timer(const Duration(milliseconds: 500), () {
+      final percent = double.tryParse(text) ?? 0;
+      NetWorthPreferences.instance.setAnnualInflationRate(percent / 100);
+    });
+  }
+
+  @override
+  void dispose() {
+    _inflationSaveTimer?.cancel();
+    _inflationRateController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPinState() async {
     final enabled = await PinStore.instance.isEnabled();
+    final biometricAvailable = await BiometricAuth.instance.isAvailable();
+    final biometricEnabled = await PinStore.instance.isBiometricEnabled();
     if (!mounted) return;
     setState(() {
       _pinEnabled = enabled;
+      _biometricAvailable = biometricAvailable;
+      _biometricEnabled = biometricEnabled;
       _loadingPin = false;
     });
+  }
+
+  Future<void> _onBiometricToggle(bool value) async {
+    await PinStore.instance.setBiometricEnabled(value);
+    if (mounted) setState(() => _biometricEnabled = value);
   }
 
   Future<void> _onPinToggle(bool value) async {
@@ -223,6 +264,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ),
+                    if (_biometricAvailable) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: palette.surfaceAlt,
+                          border: Border.all(color: palette.border),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Use biometrics',
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                      fontFamily: uiFont,
+                                      color: palette.heading,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Unlock with fingerprint/face instead of the PIN',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: uiFont,
+                                      color: palette.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            PillSwitch(value: _biometricEnabled, onChanged: _onBiometricToggle),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                   const SizedBox(height: 18),
                   _SectionLabel('Preferences'),
@@ -263,6 +345,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: palette.surfaceAlt,
+                      border: Border.all(color: palette.border),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Inflation rate (annual %)',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: uiFont,
+                              color: palette.heading,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 64,
+                          child: TextField(
+                            controller: _inflationRateController,
+                            onChanged: _onInflationRateChanged,
+                            textAlign: TextAlign.end,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: TextStyle(fontSize: 13.5, fontFamily: monoFont, color: palette.heading),
+                            decoration: InputDecoration(
+                              hintText: '0.0',
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              filled: true,
+                              fillColor: palette.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: palette.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: palette.border),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Material(
+                    color: palette.surfaceAlt,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MilestonesSettingsScreen()),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: palette.border),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Milestones',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: uiFont,
+                                  color: palette.heading,
+                                ),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, size: 20, color: palette.muted),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

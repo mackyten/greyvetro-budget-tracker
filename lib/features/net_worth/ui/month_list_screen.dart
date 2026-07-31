@@ -220,7 +220,15 @@ class _MonthTile extends StatelessWidget {
     final leftColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(monthFormat.format(summary.entry.month), style: headerStyle),
+        Row(
+          children: [
+            Text(monthFormat.format(summary.entry.month), style: headerStyle),
+            if (summary.entry.locked) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.lock, size: 12, color: palette.muted),
+            ],
+          ],
+        ),
         Text(
           'Assets ${currencyFormat.format(summary.totalAssets)} · '
           'Reserved ${currencyFormat.format(summary.totalReservedLiabilities)}',

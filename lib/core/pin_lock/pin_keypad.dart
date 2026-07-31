@@ -17,6 +17,7 @@ class PinKeypad extends StatelessWidget {
     required this.onDigit,
     required this.onBackspace,
     this.onCancel,
+    this.onBiometricTap,
   });
 
   final String title;
@@ -27,6 +28,11 @@ class PinKeypad extends StatelessWidget {
   final ValueChanged<String> onDigit;
   final VoidCallback onBackspace;
   final VoidCallback? onCancel;
+
+  /// When set, renders a fingerprint shortcut in the numeric pad's empty
+  /// bottom-left slot — pressing it tries biometric auth instead of PIN
+  /// digits.
+  final VoidCallback? onBiometricTap;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +114,11 @@ class PinKeypad extends StatelessWidget {
                     ),
             ),
             const Spacer(),
-            _NumericPad(onDigit: onDigit, onBackspace: onBackspace),
+            _NumericPad(
+              onDigit: onDigit,
+              onBackspace: onBackspace,
+              onBiometricTap: onBiometricTap,
+            ),
             const SizedBox(height: 28),
           ],
         ),
@@ -118,10 +128,11 @@ class PinKeypad extends StatelessWidget {
 }
 
 class _NumericPad extends StatelessWidget {
-  const _NumericPad({required this.onDigit, required this.onBackspace});
+  const _NumericPad({required this.onDigit, required this.onBackspace, this.onBiometricTap});
 
   final ValueChanged<String> onDigit;
   final VoidCallback onBackspace;
+  final VoidCallback? onBiometricTap;
 
   static const _rows = [
     ['1', '2', '3'],
@@ -147,7 +158,9 @@ class _NumericPad extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(width: 72, height: 72),
+              onBiometricTap != null
+                  ? _PadButton(icon: Icons.fingerprint, onTap: onBiometricTap!)
+                  : const SizedBox(width: 72, height: 72),
               _PadButton(label: '0', onTap: () => onDigit('0')),
               _PadButton(
                 icon: Icons.backspace_outlined,

@@ -1,22 +1,30 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
+import '../../../core/thousands_input_formatter.dart';
 import '../data/budget_repository.dart';
+import '../data/home_widget_sync.dart';
 import '../data/month_draft_store.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'cash_counter_sheet.dart';
 import 'ghost_icon_button.dart';
+import 'voice_amount_parser.dart';
+import 'voice_input_button.dart';
 
 /// How long to wait after the last keystroke before persisting a local
 /// draft — frequent enough that an accidental dismiss loses at most a
 /// fraction of a second of typing, infrequent enough to not thrash storage.
 const _draftSaveDebounce = Duration(milliseconds: 400);
+
+/// A month-over-month balance swing of this fraction (60%) or more trips the
+/// fat-finger anomaly guard, e.g. typing an extra digit turning ₱12,000 into
+/// ₱120,000.
+const _anomalyThreshold = 0.6;
 
 /// Opens the Month Detail editor as a large, draggable modal sheet (rather
 /// than a pushed screen) so it reads as "temporarily editing a record" while
@@ -65,6 +73,7 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   late final TextEditingController _noteController;
   bool _saving = false;
   Timer? _draftSaveTimer;
+  late bool _locked;
 
   /// Set once the user explicitly taps Save — suppresses the dispose-time
   /// draft flush, since the data is now safely persisted server-side and any
@@ -80,10 +89,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   @override
   void initState() {
     super.initState();
+    _locked = widget.entry.locked;
     _controllers = {
       for (final a in widget.accounts)
         a.id: TextEditingController(
-          text: widget.entry.balances[a.id]?.toStringAsFixed(2) ?? '',
+          text: formatGrouped(widget.entry.balances[a.id]?.toStringAsFixed(2) ?? ''),
         ),
     };
     _noteController = TextEditingController(text: widget.entry.note ?? '');
@@ -142,27 +152,86 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   MonthlyEntry get _liveEntry {
     final balances = <String, double>{};
     for (final entry in _controllers.entries) {
-      final parsed = double.tryParse(entry.value.text);
+      final parsed = parseAmount(entry.value.text);
       if (parsed != null) balances[entry.key] = parsed;
     }
     return MonthlyEntry(
       month: widget.entry.month,
       balances: balances,
       note: _noteController.text,
+      locked: _locked,
     );
   }
 
+  /// Accounts whose balance swung by [_anomalyThreshold] or more since the
+  /// previous month — a likely fat-fingered entry (e.g. a stray extra
+  /// digit). Accounts absent from the previous month are skipped since
+  /// there's nothing to diff against.
+  List<String> _anomalousAccountIds() {
+    final previous = widget.previous;
+    if (previous == null) return [];
+    final live = _liveEntry;
+    final flagged = <String>[];
+    for (final entry in live.balances.entries) {
+      final prevBalance = previous.balances[entry.key];
+      if (prevBalance == null || prevBalance == 0) continue;
+      final change = (entry.value - prevBalance).abs() / prevBalance.abs();
+      if (change >= _anomalyThreshold) flagged.add(entry.key);
+    }
+    return flagged;
+  }
+
+  Future<bool> _confirmAnomalyIfAny() async {
+    if (_anomalousAccountIds().isEmpty) return true;
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Large balance change'),
+        content: const Text(
+          'One or more balances changed a lot compared to last month. '
+          'Double check for a typo before saving.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Review'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save anyway'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
+  }
+
   Future<void> _save() async {
+    if (!await _confirmAnomalyIfAny()) return;
     setState(() => _saving = true);
     try {
-      await widget.repository.saveMonthlyEntry(_liveEntry);
+      final entry = _liveEntry;
+      await widget.repository.saveMonthlyEntry(entry);
       _committed = true;
       _draftSaveTimer?.cancel();
       await MonthDraftStore.instance.clear(widget.entry.id);
+      await updateHomeWidget(
+        MonthSummary.compute(entry: entry, previous: widget.previous, accounts: widget.accounts),
+      );
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Flips the lock and persists it immediately, as its own save call —
+  /// distinct from the explicit Save button — so "locked" is guaranteed true
+  /// the instant the toggle flips, with no "did it actually save?"
+  /// ambiguity.
+  Future<void> _toggleLock() async {
+    final newLocked = !_locked;
+    setState(() => _locked = newLocked);
+    await widget.repository.saveMonthlyEntry(_liveEntry.copyWith(locked: newLocked));
   }
 
   @override
@@ -234,6 +303,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                           ),
                         ),
                       ),
+                      GhostIconButton(
+                        icon: _locked ? Icons.lock : Icons.lock_open,
+                        onPressed: _toggleLock,
+                      ),
+                      const SizedBox(width: 8),
                       SizedBox(
                         width: 38,
                         height: 38,
@@ -265,10 +339,10 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                     children: [
                       _SectionHeader('Assets'),
                       for (final a in assets)
-                        _AccountRow(account: a, controller: _controllers[a.id]!),
+                        _AccountRow(account: a, controller: _controllers[a.id]!, locked: _locked),
                       _SectionHeader('Reserved & Liabilities'),
                       for (final a in reserved)
-                        _AccountRow(account: a, controller: _controllers[a.id]!),
+                        _AccountRow(account: a, controller: _controllers[a.id]!, locked: _locked),
                       Padding(
                         padding: const EdgeInsets.only(top: 18, bottom: 6),
                         child: Text(
@@ -286,6 +360,7 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                         padding: const EdgeInsets.only(bottom: 16),
                         child: TextField(
                           controller: _noteController,
+                          readOnly: _locked,
                           maxLines: 2,
                           style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
                           decoration: InputDecoration(
@@ -340,10 +415,11 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _AccountRow extends StatelessWidget {
-  const _AccountRow({required this.account, required this.controller});
+  const _AccountRow({required this.account, required this.controller, required this.locked});
 
   final Account account;
   final TextEditingController controller;
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -395,22 +471,38 @@ class _AccountRow extends StatelessWidget {
                 ),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(8),
-                  onTap: () async {
-                    final total = await showModalBottomSheet<double>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const CashCounterSheet(),
-                    );
-                    if (total != null) {
-                      controller.text = total.toStringAsFixed(2);
-                    }
-                  },
-                  child: const Icon(Icons.calculate, size: 16, color: AppPalette.blueDeep),
+                  onTap: locked
+                      ? null
+                      : () async {
+                          final total = await showModalBottomSheet<double>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const CashCounterSheet(),
+                          );
+                          if (total != null) {
+                            controller.text = formatGrouped(total.toStringAsFixed(2));
+                          }
+                        },
+                  child: Icon(
+                    Icons.calculate,
+                    size: 16,
+                    color: locked ? palette.muted : AppPalette.blueDeep,
+                  ),
                 ),
               ),
             ),
           ],
+          const SizedBox(width: 8),
+          VoiceInputButton(
+            enabled: !locked,
+            onResult: (spoken) {
+              final amount = parseSpokenAmount(spoken);
+              if (amount != null) {
+                controller.text = formatGrouped(amount.toStringAsFixed(2));
+              }
+            },
+          ),
           const SizedBox(width: 8),
           Container(
             width: 126,
@@ -427,11 +519,10 @@ class _AccountRow extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: controller,
+                    readOnly: locked,
                     textAlign: TextAlign.end,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                    ],
+                    inputFormatters: [ThousandsInputFormatter()],
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,

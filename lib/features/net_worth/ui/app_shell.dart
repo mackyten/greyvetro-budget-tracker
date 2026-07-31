@@ -1,10 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/design_tokens.dart';
 import '../../../core/theme_controller.dart';
 import '../data/budget_repository.dart';
+import '../data/home_widget_sync.dart';
+import '../data/net_worth_preferences.dart';
+import '../data/reminder_scheduler.dart';
+import '../models/month_summary.dart';
+import '../models/monthly_entry.dart';
 import 'dashboard_screen.dart';
 import 'manage_accounts_screen.dart';
+import 'milestone_celebration_dialog.dart';
 import 'month_list_screen.dart';
 
 /// Top-level navigation shell: a persistent bottom nav bar with three
@@ -22,6 +30,50 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  StreamSubscription<List<MonthlyEntry>>? _launchCheckSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Runs once, after the first snapshot of entries is available. Shared
+    // by Phase 5 (reminder), Phase 6 (milestones), and Phase 7 (home-widget
+    // sync) rather than each adding a separate launch-time listener.
+    _launchCheckSub = widget.repository.watchMonthlyEntries().listen((entries) {
+      _launchCheckSub?.cancel();
+      _runLaunchChecks(entries);
+    });
+  }
+
+  Future<void> _runLaunchChecks(List<MonthlyEntry> entries) async {
+    await ReminderScheduler.instance.scheduleMonthEndReminder(entries);
+
+    final accounts = await widget.repository.watchAccounts().first;
+    final summaries = computeMonthSummaries(entries: entries, accounts: accounts);
+    if (summaries.isEmpty) return;
+
+    await _checkMilestones(summaries);
+    await updateHomeWidget(summaries.last);
+  }
+
+  Future<void> _checkMilestones(List<MonthSummary> summaries) async {
+    final latestNetSavings = summaries.last.netSavings;
+    final targets = await NetWorthPreferences.instance.getTargets();
+    targets.sort();
+    final celebrated = await NetWorthPreferences.instance.getCelebratedTargets();
+
+    for (final target in targets) {
+      if (celebrated.contains(target) || latestNetSavings < target) continue;
+      if (!mounted) return;
+      await showMilestoneCelebrationDialog(context, target);
+      await NetWorthPreferences.instance.markCelebrated(target);
+    }
+  }
+
+  @override
+  void dispose() {
+    _launchCheckSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -6,12 +6,18 @@ class MonthlyEntry {
     required this.month,
     required this.balances,
     this.note,
+    this.locked = false,
   });
 
   /// First day of the month, e.g. 2025-04-01. Doc id is derived from this.
   final DateTime month;
   final Map<String, double> balances;
   final String? note;
+
+  /// When true, this month is finalized and its fields should be read-only
+  /// in the editor — toggled immediately (its own save call), not folded
+  /// into the next explicit Save.
+  final bool locked;
 
   String get id =>
       '${month.year.toString().padLeft(4, '0')}-${month.month.toString().padLeft(2, '0')}';
@@ -25,6 +31,7 @@ class MonthlyEntry {
         (key, value) => MapEntry(key as String, (value as num).toDouble()),
       ),
       note: map['note'] as String?,
+      locked: map['locked'] as bool? ?? false,
     );
   }
 
@@ -32,14 +39,20 @@ class MonthlyEntry {
     return {
       'balances': balances,
       'note': note,
+      'locked': locked,
     };
   }
 
-  MonthlyEntry copyWith({Map<String, double>? balances, String? note}) {
+  MonthlyEntry copyWith({
+    Map<String, double>? balances,
+    String? note,
+    bool? locked,
+  }) {
     return MonthlyEntry(
       month: month,
       balances: balances ?? this.balances,
       note: note ?? this.note,
+      locked: locked ?? this.locked,
     );
   }
 }

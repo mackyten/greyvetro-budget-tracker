@@ -16,6 +16,7 @@ class PinStore {
   static const _hashKey = 'pin_lock_hash';
   static const _saltKey = 'pin_lock_salt';
   static const _enabledKey = 'pin_lock_enabled';
+  static const _biometricEnabledKey = 'pin_lock_biometric_enabled';
 
   Future<bool> isSet() async => await _storage.read(key: _hashKey) != null;
 
@@ -26,6 +27,14 @@ class PinStore {
 
   Future<void> setEnabled(bool enabled) async {
     await _storage.write(key: _enabledKey, value: enabled.toString());
+  }
+
+  Future<bool> isBiometricEnabled() async {
+    return (await _storage.read(key: _biometricEnabledKey)) == 'true';
+  }
+
+  Future<void> setBiometricEnabled(bool enabled) async {
+    await _storage.write(key: _biometricEnabledKey, value: enabled.toString());
   }
 
   Future<void> setPin(String pin) async {

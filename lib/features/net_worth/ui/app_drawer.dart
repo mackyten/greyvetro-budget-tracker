@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../../../core/theme_controller.dart';
+import '../../vault/ui/vault_entry.dart';
 import '../data/budget_repository.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
+import '../models/streak.dart';
+import 'export_screen.dart';
 import 'placeholder_screen.dart';
 import 'settings_screen.dart';
 
@@ -45,20 +48,26 @@ class AppDrawer extends StatelessWidget {
                 },
               ),
               _DrawerRow(
+                icon: Icons.shield_outlined,
+                label: 'Secure Vault',
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final accounts = await repository.watchAccounts().first;
+                  if (!context.mounted) return;
+                  openVault(
+                    context,
+                    accounts: [for (final a in accounts) (id: a.id, name: a.name)],
+                  );
+                },
+              ),
+              _DrawerRow(
                 icon: Icons.file_download_outlined,
                 label: 'Export / Backup',
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const PlaceholderScreen(
-                        headerTitle: 'Export / Backup',
-                        icon: Icons.file_download_outlined,
-                        heading: 'Export & backup',
-                        message: 'Download your data as a file, or back it up to the '
-                            'cloud. Coming soon.',
-                        trailing: _DisabledButton('Export data'),
-                      ),
+                      builder: (_) => ExportScreen(repository: repository),
                     ),
                   );
                 },
@@ -164,33 +173,6 @@ class _DrawerRow extends StatelessWidget {
   }
 }
 
-class _DisabledButton extends StatelessWidget {
-  const _DisabledButton(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        color: palette.surfaceAlt,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          fontFamily: uiFont,
-          color: palette.muted,
-        ),
-      ),
-    );
-  }
-}
-
 class _DrawerHeader extends StatelessWidget {
   const _DrawerHeader({required this.repository});
 
@@ -215,35 +197,63 @@ class _DrawerHeader extends StatelessWidget {
               color: palette.heading,
             ),
           ),
-          Text(
-            'Net savings',
-            style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
-          ),
+          const SizedBox(height: 8),
           StreamBuilder<List<Account>>(
             stream: repository.watchAccounts(),
             builder: (context, accountsSnap) {
               return StreamBuilder<List<MonthlyEntry>>(
                 stream: repository.watchMonthlyEntries(),
                 builder: (context, entriesSnap) {
-                  final style = TextStyle(
+                  final labelStyle = TextStyle(
+                    fontSize: 12,
+                    fontFamily: uiFont,
+                    color: palette.muted,
+                  );
+                  final valueStyle = TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     fontFamily: monoFont,
                     color: AppPalette.blueDeep,
                   );
-                  if (!accountsSnap.hasData || !entriesSnap.hasData) {
-                    return Text('…', style: style);
-                  }
-                  final entries = entriesSnap.data!;
-                  if (entries.isEmpty) {
-                    return Text(currencyFormat.format(0), style: style);
-                  }
-                  final summaries = computeMonthSummaries(
-                    entries: entries,
-                    accounts: accountsSnap.data!,
+                  final entries = entriesSnap.data ?? const <MonthlyEntry>[];
+                  final loading = !accountsSnap.hasData || !entriesSnap.hasData;
+
+                  final netSavingsText = loading
+                      ? '…'
+                      : entries.isEmpty
+                          ? currencyFormat.format(0)
+                          : currencyFormat.format(
+                              computeMonthSummaries(
+                                entries: entries,
+                                accounts: accountsSnap.data!,
+                              ).last.netSavings,
+                            );
+                  final streak = loading ? null : computeLoggedStreak(entries);
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Net savings', style: labelStyle),
+                            Text(netSavingsText, style: valueStyle),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('Streak', style: labelStyle),
+                          Text(
+                            streak == null ? '…' : '$streak mo',
+                            style: valueStyle.copyWith(fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ],
                   );
-                  final latest = summaries.last;
-                  return Text(currencyFormat.format(latest.netSavings), style: style);
                 },
               );
             },

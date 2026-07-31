@@ -5,9 +5,12 @@ import 'package:intl/intl.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../data/budget_repository.dart';
+import '../data/net_worth_preferences.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
+import '../models/net_worth_projection.dart';
+import '../models/real_net_worth.dart';
 
 final _axisMonthFormat = DateFormat('MMM yy');
 
@@ -77,6 +80,7 @@ class DashboardScreen extends StatelessWidget {
                               title: 'Net worth over time',
                               child: _NetWorthTrendChart(summaries: summaries),
                             ),
+                            _ProjectionBanner(summaries: summaries),
                             _ChartCard(
                               title: 'Assets vs. Reserved & Liabilities',
                               child: _AssetsVsLiabilitiesChart(summaries: summaries),
@@ -230,60 +234,186 @@ FlTitlesData _axisTitles(List<MonthSummary> summaries) {
   );
 }
 
-/// Net worth (Assets − Reserved & Liabilities) per month. A single series, so
-/// no legend — the card title already names what's plotted.
-class _NetWorthTrendChart extends StatelessWidget {
+/// Net worth (Assets − Reserved & Liabilities) per month. Single series (no
+/// legend, card title names what's plotted) unless an inflation rate is set
+/// in Settings, in which case a second, inflation-adjusted line is layered
+/// on using the same two-series + [_LegendDot] pattern as
+/// [_AssetsVsLiabilitiesChart].
+class _NetWorthTrendChart extends StatefulWidget {
   const _NetWorthTrendChart({required this.summaries});
 
   final List<MonthSummary> summaries;
 
   @override
+  State<_NetWorthTrendChart> createState() => _NetWorthTrendChartState();
+}
+
+class _NetWorthTrendChartState extends State<_NetWorthTrendChart> {
+  double _inflationRate = 0;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInflationRate();
+  }
+
+  Future<void> _loadInflationRate() async {
+    final rate = await NetWorthPreferences.instance.getAnnualInflationRate();
+    if (!mounted) return;
+    setState(() {
+      _inflationRate = rate;
+      _loaded = true;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final summaries = widget.summaries;
     if (summaries.length < 2) {
       return const _EmptyChartMessage('Track at least 2 months to see the net worth trend.');
     }
     const primary = AppPalette.blueDeep;
+    const realColor = AppPalette.colorblindOrange;
     final gridColor = Theme.of(context).colorScheme.outlineVariant;
+
     final spots = [
       for (var i = 0; i < summaries.length; i++) FlSpot(i.toDouble(), summaries[i].netSavings),
     ];
 
-    return AspectRatio(
-      aspectRatio: 1.6,
-      child: LineChart(
-        LineChartData(
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: primary,
-              barWidth: 2,
-              dotData: FlDotData(show: summaries.length <= 12),
-              belowBarData: BarAreaData(show: true, color: primary.withValues(alpha: 0.1)),
-            ),
-          ],
-          titlesData: _axisTitles(summaries),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(color: gridColor, strokeWidth: 1),
+    final showReal = _loaded && _inflationRate > 0;
+    final realSeries = showReal
+        ? realNetWorthSeries(summaries: summaries, annualInflationRate: _inflationRate)
+        : const <double>[];
+    final realSpots = [
+      for (var i = 0; i < realSeries.length; i++) FlSpot(i.toDouble(), realSeries[i]),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showReal) ...[
+          Row(
+            children: [
+              _LegendDot(color: primary, label: 'Net worth'),
+              const SizedBox(width: 16),
+              _LegendDot(color: realColor, label: "Inflation-adjusted (today's pesos)"),
+            ],
           ),
-          borderData: FlBorderData(show: false),
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipItems: (touchedSpots) => [
-                for (final spot in touchedSpots)
-                  LineTooltipItem(
-                    '${monthFormat.format(summaries[spot.x.toInt()].entry.month)}\n'
-                    '${currencyFormat.format(spot.y)}',
-                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+          const SizedBox(height: 12),
+        ],
+        AspectRatio(
+          aspectRatio: 1.6,
+          child: LineChart(
+            LineChartData(
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  color: primary,
+                  barWidth: 2,
+                  dotData: FlDotData(show: summaries.length <= 12),
+                  belowBarData: BarAreaData(show: !showReal, color: primary.withValues(alpha: 0.1)),
+                ),
+                if (showReal)
+                  LineChartBarData(
+                    spots: realSpots,
+                    isCurved: true,
+                    color: realColor,
+                    barWidth: 2,
+                    dotData: const FlDotData(show: false),
+                    dashArray: const [6, 4],
                   ),
               ],
+              titlesData: _axisTitles(summaries),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) => FlLine(color: gridColor, strokeWidth: 1),
+              ),
+              borderData: FlBorderData(show: false),
+              lineTouchData: LineTouchData(
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipItems: (touchedSpots) => [
+                    for (final spot in touchedSpots)
+                      LineTooltipItem(
+                        '${monthFormat.format(summaries[spot.x.toInt()].entry.month)}\n'
+                        '${currencyFormat.format(spot.y)}',
+                        const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
+  }
+}
+
+/// What-if projector (#8): a text banner reusing [_ChartCard]'s chrome, not
+/// its chart internals. Reuses the same target-amount preference as
+/// milestones (#10a) rather than a second, bespoke "target" concept — the
+/// nearest not-yet-reached target becomes the projection's target.
+class _ProjectionBanner extends StatefulWidget {
+  const _ProjectionBanner({required this.summaries});
+
+  final List<MonthSummary> summaries;
+
+  @override
+  State<_ProjectionBanner> createState() => _ProjectionBannerState();
+}
+
+class _ProjectionBannerState extends State<_ProjectionBanner> {
+  double? _nextTarget;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNextTarget();
+  }
+
+  Future<void> _loadNextTarget() async {
+    final targets = await NetWorthPreferences.instance.getTargets();
+    final currentNetWorth = widget.summaries.isEmpty ? 0.0 : widget.summaries.last.netSavings;
+    final upcoming = targets.where((t) => t > currentNetWorth).toList()..sort();
+    if (!mounted) return;
+    setState(() {
+      _nextTarget = upcoming.isEmpty ? null : upcoming.first;
+      _loaded = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    if (!_loaded) return const SizedBox.shrink();
+
+    final projection = computeProjection(summaries: widget.summaries, targetAmount: _nextTarget);
+    final textStyle = TextStyle(fontSize: 12.5, fontFamily: uiFont, color: palette.text);
+
+    if (projection == null) {
+      return _ChartCard(
+        title: 'Projection',
+        child: Text(
+          "You're not currently saving on average, based on recent months — no projection to show.",
+          style: textStyle,
+        ),
+      );
+    }
+
+    final monthsToTarget = projection.monthsToTarget;
+    final target = _nextTarget;
+    final text = (monthsToTarget == null || target == null)
+        ? 'At an average of ${currencyFormat.format(projection.averageMonthlySavings)} saved '
+            'per month recently, your net worth keeps growing.'
+        : 'At an average of ${currencyFormat.format(projection.averageMonthlySavings)} saved '
+            "per month, you'll reach ${currencyFormat.format(target)} in about "
+            '$monthsToTarget month${monthsToTarget == 1 ? '' : 's'}.';
+
+    return _ChartCard(title: 'Projection', child: Text(text, style: textStyle));
   }
 }
 

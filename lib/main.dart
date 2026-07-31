@@ -6,6 +6,7 @@ import 'core/pin_lock/pin_gate.dart';
 import 'core/theme_controller.dart';
 import 'features/net_worth/data/budget_repository.dart';
 import 'features/net_worth/data/firestore_budget_repository.dart';
+import 'features/net_worth/data/reminder_scheduler.dart';
 import 'features/net_worth/data/seed_importer.dart';
 import 'features/net_worth/ui/app_shell.dart';
 import 'firebase_options.dart';
@@ -13,6 +14,7 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await ReminderScheduler.instance.init();
 
   final repository = FirestoreBudgetRepository();
   await importSeedIfEmpty(repository);
