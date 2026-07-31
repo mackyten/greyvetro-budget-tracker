@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'core/design_tokens.dart';
+import 'core/pin_lock/pin_gate.dart';
 import 'core/theme_controller.dart';
 import 'features/net_worth/data/budget_repository.dart';
 import 'features/net_worth/data/firestore_budget_repository.dart';
@@ -35,7 +36,9 @@ class BudgetTrackerApp extends StatelessWidget {
           theme: _buildTheme(AppPalette.light, Brightness.light),
           darkTheme: _buildTheme(AppPalette.dark, Brightness.dark),
           themeMode: mode,
-          home: AppShell(repository: repository, themeController: _themeController),
+          home: PinGate(
+            child: AppShell(repository: repository, themeController: _themeController),
+          ),
         );
       },
     );
