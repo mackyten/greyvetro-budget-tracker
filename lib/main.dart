@@ -8,7 +8,7 @@ import 'features/net_worth/data/budget_repository.dart';
 import 'features/net_worth/data/firestore_budget_repository.dart';
 import 'features/net_worth/data/reminder_scheduler.dart';
 import 'features/net_worth/data/seed_importer.dart';
-import 'features/net_worth/ui/app_shell.dart';
+import 'features/net_worth/ui/home_screen.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -39,7 +39,7 @@ class BudgetTrackerApp extends StatelessWidget {
           darkTheme: _buildTheme(AppPalette.dark, Brightness.dark),
           themeMode: mode,
           home: PinGate(
-            child: AppShell(repository: repository, themeController: _themeController),
+            child: HomeScreen(repository: repository, themeController: _themeController),
           ),
         );
       },

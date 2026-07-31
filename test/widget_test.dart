@@ -1,9 +1,56 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
+import 'package:greyvetro_budget_tracker/core/pin_lock/pin_store.dart';
 import 'package:greyvetro_budget_tracker/features/net_worth/data/budget_repository.dart';
 import 'package:greyvetro_budget_tracker/features/net_worth/models/account.dart';
 import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
 import 'package:greyvetro_budget_tracker/main.dart';
+
+/// Fake secure-storage backend so `PinGate`'s `PinStore.isEnabled()` check
+/// resolves instead of hitting an unmocked platform channel — same fake used
+/// by `vault_entry_test.dart`.
+class _FakeSecureStoragePlatform extends FlutterSecureStoragePlatform {
+  final Map<String, String> _values = {};
+
+  @override
+  Future<void> write({
+    required String key,
+    required String value,
+    required Map<String, String> options,
+  }) async {
+    _values[key] = value;
+  }
+
+  @override
+  Future<String?> read({required String key, required Map<String, String> options}) async {
+    return _values[key];
+  }
+
+  @override
+  Future<bool> containsKey({required String key, required Map<String, String> options}) async {
+    return _values.containsKey(key);
+  }
+
+  @override
+  Future<void> delete({required String key, required Map<String, String> options}) async {
+    _values.remove(key);
+  }
+
+  @override
+  Future<Map<String, String>> readAll({required Map<String, String> options}) async {
+    return Map.of(_values);
+  }
+
+  @override
+  Future<void> deleteAll({required Map<String, String> options}) async {
+    _values.clear();
+  }
+}
 
 class _FakeBudgetRepository implements BudgetRepository {
   @override
@@ -29,11 +76,45 @@ class _FakeBudgetRepository implements BudgetRepository {
 }
 
 void main() {
-  testWidgets('Month list screen renders with no data', (tester) async {
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    FlutterSecureStoragePlatform.instance = _FakeSecureStoragePlatform();
+    await PinStore.instance.clear();
+
+    // HomeScreen's launch checks call ReminderScheduler.scheduleMonthEndReminder,
+    // which needs the timezone database (normally loaded by main()'s
+    // ReminderScheduler.init(), which this test bypasses) and talks to the
+    // flutter_local_notifications platform channel — mock both so the
+    // launch check resolves instead of throwing.
+    tz_data.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Manila'));
+    // Real plugin registration never runs in a widget test — register the
+    // real (channel-based) Android implementation so
+    // `resolvePlatformSpecificImplementation` finds a non-null match; its
+    // channel calls land on the mock handler set up below.
+    AndroidFlutterLocalNotificationsPlugin.registerWith();
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('dexterous.com/flutter/local_notifications'),
+      (call) async => null,
+    );
+  });
+
+  testWidgets('Home screen renders with no data', (tester) async {
     await tester.pumpWidget(BudgetTrackerApp(repository: _FakeBudgetRepository()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Net Worth / Liquidity Tracker'), findsOneWidget);
-    expect(find.text('No months tracked yet. Tap + to add one.'), findsOneWidget);
+    expect(find.text('Net Worth Tracker'), findsOneWidget);
+    expect(find.text('Liquidity across all accounts'), findsOneWidget);
+    // ₱0.00 renders for the hero net-worth value plus its Assets and
+    // Reserved & Liabilities footer figures.
+    expect(find.text('₱0.00'), findsNWidgets(3));
+    expect(find.text('0 active accounts'), findsOneWidget);
+    expect(find.text('0 snapshots recorded'), findsOneWidget);
+
+    // The "Recent snapshots" empty state sits below several chart cards, so
+    // scroll the Home screen's list until it's actually built.
+    await tester.scrollUntilVisible(find.text('No months tracked yet.'), 300);
+    expect(find.text('No months tracked yet.'), findsOneWidget);
   });
 }

@@ -4,6 +4,7 @@ import '../../../core/design_tokens.dart';
 import '../data/budget_repository.dart';
 import '../models/account.dart';
 import 'design_chip.dart';
+import 'ghost_icon_button.dart';
 import 'gradient_fab.dart';
 import 'pill_switch.dart';
 
@@ -25,14 +26,26 @@ class ManageAccountsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: palette.border)),
               ),
-              child: Text(
-                'Accounts',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: uiFont,
-                  color: palette.heading,
-                ),
+              child: Row(
+                children: [
+                  GhostIconButton(
+                    icon: Icons.arrow_back,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Accounts',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: uiFont,
+                        color: palette.heading,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 38),
+                ],
               ),
             ),
             Expanded(

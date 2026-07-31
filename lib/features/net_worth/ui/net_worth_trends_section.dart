@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
-import '../data/budget_repository.dart';
 import '../data/net_worth_preferences.dart';
 import '../models/account.dart';
 import '../models/month_summary.dart';
@@ -14,99 +13,62 @@ import '../models/real_net_worth.dart';
 
 final _axisMonthFormat = DateFormat('MMM yy');
 
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key, required this.repository});
+/// Renders the Home screen's "Trends" section: every chart/metric card
+/// derived from the tracked months, in the design's order — net worth
+/// trend, the what-if projection banner (an existing feature the current
+/// design mockup doesn't show but that isn't being dropped), assets vs.
+/// reserved & liabilities, monthly saved amount, latest balance breakdown,
+/// and the two balance-breakdown donuts. Each card handles its own
+/// "not enough data yet" empty state rather than the section as a whole,
+/// matching the design's per-card `emptyStyle` behavior — there's no single
+/// blanket "no months tracked" message replacing the whole section.
+class NetWorthTrendsSection extends StatelessWidget {
+  const NetWorthTrendsSection({super.key, required this.accounts, required this.entries});
 
-  final BudgetRepository repository;
+  final List<Account> accounts;
+  final List<MonthlyEntry> entries;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Dashboard',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: uiFont,
-                  color: palette.heading,
-                ),
-              ),
-              Text(
-                'Trends across all tracked months',
-                style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: StreamBuilder<List<Account>>(
-                  stream: repository.watchAccounts(),
-                  builder: (context, accountsSnap) {
-                    if (!accountsSnap.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final accounts = accountsSnap.data!;
-                    return StreamBuilder<List<MonthlyEntry>>(
-                      stream: repository.watchMonthlyEntries(),
-                      builder: (context, entriesSnap) {
-                        if (!entriesSnap.hasData) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        final entries = entriesSnap.data!;
-
-                        if (entries.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No months tracked yet.',
-                              style: TextStyle(fontFamily: uiFont, color: palette.muted),
-                            ),
-                          );
-                        }
-
-                        final summaries = computeMonthSummaries(
-                          entries: entries,
-                          accounts: accounts,
-                        );
-
-                        return ListView(
-                          padding: const EdgeInsets.only(bottom: 96),
-                          children: [
-                            _ChartCard(
-                              title: 'Net worth over time',
-                              child: _NetWorthTrendChart(summaries: summaries),
-                            ),
-                            _ProjectionBanner(summaries: summaries),
-                            _ChartCard(
-                              title: 'Assets vs. Reserved & Liabilities',
-                              child: _AssetsVsLiabilitiesChart(summaries: summaries),
-                            ),
-                            _ChartCard(
-                              title: 'Monthly saved amount',
-                              child: _MonthlySavedChart(summaries: summaries),
-                            ),
-                            _ChartCard(
-                              title: 'Latest balance breakdown',
-                              child: _LatestBalanceBreakdownChart(
-                                accounts: accounts,
-                                latestEntry: summaries.last.entry,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+    final summaries = computeMonthSummaries(entries: entries, accounts: accounts);
+    return Column(
+      children: [
+        _ChartCard(
+          title: 'Net worth over time',
+          child: _NetWorthTrendChart(summaries: summaries),
+        ),
+        _ProjectionBanner(summaries: summaries),
+        _ChartCard(
+          title: 'Assets vs. Reserved & Liabilities',
+          child: _AssetsVsLiabilitiesChart(summaries: summaries),
+        ),
+        _ChartCard(
+          title: 'Monthly saved amount',
+          child: _MonthlySavedChart(summaries: summaries),
+        ),
+        _ChartCard(
+          title: 'Latest balance breakdown',
+          child: _LatestBalanceBreakdownChart(accounts: accounts, summaries: summaries),
+        ),
+        _ChartCard(
+          title: 'Assets breakdown',
+          child: _BalanceBreakdownPie(
+            accounts: accounts,
+            summaries: summaries,
+            section: AccountSection.asset,
+            emptyMessage: 'No active asset balances yet.',
           ),
         ),
-      ),
+        _ChartCard(
+          title: 'Reserved & Liabilities breakdown',
+          child: _BalanceBreakdownPie(
+            accounts: accounts,
+            summaries: summaries,
+            section: AccountSection.reservedLiability,
+            emptyMessage: 'No active reserved or liability balances yet.',
+          ),
+        ),
+      ],
     );
   }
 }
@@ -491,7 +453,7 @@ class _AssetsVsLiabilitiesChart extends StatelessWidget {
 /// Signed delta vs. a zero baseline. Bar direction (above/below zero) is the
 /// primary, colorblind-safe encoding of sign; green/red reinforces it and
 /// matches the convention already used for this exact figure in
-/// MonthDetailScreen's summary bar and MonthListScreen's month tiles.
+/// MonthDetailScreen's summary bar and MonthRowTile's month tiles.
 class _MonthlySavedChart extends StatelessWidget {
   const _MonthlySavedChart({required this.summaries});
 
@@ -544,13 +506,17 @@ class _MonthlySavedChart extends StatelessWidget {
 /// (the app's brand color) since this is a magnitude job, not identity;
 /// sorting by size does the "ordering" work a rainbow would otherwise fake.
 class _LatestBalanceBreakdownChart extends StatelessWidget {
-  const _LatestBalanceBreakdownChart({required this.accounts, required this.latestEntry});
+  const _LatestBalanceBreakdownChart({required this.accounts, required this.summaries});
 
   final List<Account> accounts;
-  final MonthlyEntry latestEntry;
+  final List<MonthSummary> summaries;
 
   @override
   Widget build(BuildContext context) {
+    if (summaries.isEmpty) {
+      return const _EmptyChartMessage('No balance data for the latest month.');
+    }
+    final latestEntry = summaries.last.entry;
     final rows = accounts
         .where((a) =>
             a.section == AccountSection.asset &&
@@ -609,6 +575,122 @@ class _LatestBalanceBreakdownChart extends StatelessWidget {
               ],
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Donut + legend for the latest month's active, positive-balance accounts
+/// within one [section] — same filter/sort as [_LatestBalanceBreakdownChart],
+/// rendered as identity/proportion (a handful of slices) rather than
+/// magnitude-across-many-rows. Colors cycle through the same 6-color
+/// sequence the design's `PIE_COLORS` array uses.
+class _BalanceBreakdownPie extends StatelessWidget {
+  const _BalanceBreakdownPie({
+    required this.accounts,
+    required this.summaries,
+    required this.section,
+    required this.emptyMessage,
+  });
+
+  final List<Account> accounts;
+  final List<MonthSummary> summaries;
+  final AccountSection section;
+  final String emptyMessage;
+
+  static const _colors = [
+    AppPalette.blueDeep,
+    AppPalette.pinkDeep,
+    AppPalette.ok,
+    AppPalette.colorblindOrange,
+    AppPalette.pieGold,
+    AppPalette.colorblindBlue,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (summaries.isEmpty) {
+      return _EmptyChartMessage(emptyMessage);
+    }
+    final latestEntry = summaries.last.entry;
+    final rows = accounts
+        .where((a) => a.section == section && a.active && (latestEntry.balances[a.id] ?? 0) > 0)
+        .map((a) => (a.name, latestEntry.balances[a.id]!))
+        .toList()
+      ..sort((a, b) => b.$2.compareTo(a.$2));
+
+    if (rows.isEmpty) {
+      return _EmptyChartMessage(emptyMessage);
+    }
+
+    final total = rows.fold<double>(0, (sum, r) => sum + r.$2);
+    final palette = context.palette;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 100,
+          height: 100,
+          child: PieChart(
+            PieChartData(
+              sectionsSpace: 2,
+              centerSpaceRadius: 32,
+              sections: [
+                for (var i = 0; i < rows.length; i++)
+                  PieChartSectionData(
+                    value: rows[i].$2,
+                    color: _colors[i % _colors.length],
+                    radius: 18,
+                    showTitle: false,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < rows.length; i++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: _colors[i % _colors.length],
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          rows[i].$1,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.text),
+                        ),
+                      ),
+                      Text(
+                        '${((rows[i].$2 / total) * 100).round()}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: monoFont,
+                          color: palette.heading,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }

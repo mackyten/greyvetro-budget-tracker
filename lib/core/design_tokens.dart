@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Exact design tokens ported from the verified Claude Design artifact
 /// (`Greyvetro Budget Tracker.dc.html`) — not Material3-generated colors.
@@ -28,6 +27,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
   // Brand/semantic colors are identical across light and dark.
   static const blueDeep = Color(0xFF3E9AC4);
   static const blueLight = Color(0xFF8FD0E8);
+  static const pinkDeep = Color(0xFFE58D9E);
+  static const pieGold = Color(0xFFF0C070);
   static const ok = Color(0xFF2FA96A);
   static const error = Color(0xFFE0607A);
   static const colorblindBlue = Color(0xFF0072B2);
@@ -35,7 +36,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   static const fabGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [blueDeep, Color(0xFFE58D9E)],
+    colors: [blueDeep, pinkDeep],
   );
 
   static const light = AppPalette(
@@ -98,7 +99,5 @@ extension AppPaletteContext on BuildContext {
   AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
 }
 
-/// Resolving this triggers google_fonts to fetch/cache Poppins and registers
-/// it under the family name below — that's why it's a getter, not a const.
-final String uiFont = GoogleFonts.poppins().fontFamily!;
+const uiFont = 'Manrope';
 const monoFont = 'JetBrains Mono';
