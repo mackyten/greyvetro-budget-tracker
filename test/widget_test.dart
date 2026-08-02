@@ -29,6 +29,9 @@ class _FakeAuthService implements AuthService {
 
   @override
   Future<void> signOut() async {}
+
+  @override
+  Future<void> deleteAccount() async {}
 }
 
 /// Fake secure-storage backend so `PinGate`'s `PinStore.isEnabled()` check
@@ -93,6 +96,9 @@ class _FakeBudgetRepository implements BudgetRepository {
 
   @override
   Future<void> saveMonthlyEntry(MonthlyEntry entry) async {}
+
+  @override
+  Future<void> deleteAllData() async {}
 }
 
 void main() {

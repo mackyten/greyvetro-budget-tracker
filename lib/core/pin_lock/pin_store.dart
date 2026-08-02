@@ -55,6 +55,7 @@ class PinStore {
     await _storage.delete(key: _hashKey);
     await _storage.delete(key: _saltKey);
     await _storage.delete(key: _enabledKey);
+    await _storage.delete(key: _biometricEnabledKey);
   }
 
   String _generateSalt() {

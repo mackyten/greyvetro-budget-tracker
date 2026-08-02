@@ -35,6 +35,9 @@ class _RecordingRepository implements BudgetRepository {
   Future<void> saveMonthlyEntry(MonthlyEntry entry) async {
     saved.add(entry);
   }
+
+  @override
+  Future<void> deleteAllData() async {}
 }
 
 final _account = Account(

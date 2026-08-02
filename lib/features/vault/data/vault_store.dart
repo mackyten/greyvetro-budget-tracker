@@ -49,6 +49,13 @@ class VaultStore {
     await _persist(list);
   }
 
+  /// Wipes every Vault item — used when the user deletes their account, so
+  /// nothing on-device outlives the account it was scoped to.
+  Future<void> clearAll() async {
+    items.value = const [];
+    await _storage.delete(key: _itemsKey);
+  }
+
   Future<void> _persist(List<VaultItem> list) async {
     await _storage.write(
       key: _itemsKey,

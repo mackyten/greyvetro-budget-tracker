@@ -14,4 +14,9 @@ abstract class BudgetRepository {
   Stream<List<MonthlyEntry>> watchMonthlyEntries();
   Future<MonthlyEntry?> getMonthlyEntry(String entryId);
   Future<void> saveMonthlyEntry(MonthlyEntry entry);
+
+  /// Permanently deletes every account and monthly entry for the signed-in
+  /// user — the Firestore-side half of account deletion (see
+  /// `AuthService.deleteAccount` for the identity half). Irreversible.
+  Future<void> deleteAllData();
 }

@@ -12,7 +12,20 @@
           "package_name": "com.greyvetro.greyvetro_budget_tracker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "963651852002-gavfdaagr67muvhs3fo6esqqjg4sij00.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.greyvetro.greyvetro_budget_tracker",
+            "certificate_hash": "28c1c5f7aca2f221e01765920080587587c1c5f7"
+          }
+        },
+        {
+          "client_id": "963651852002-e1aph5lqp2sc9oa40vnsqv7bag6fd562.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA3mT48V_Q4P6R21JS4YcPkfJEFUeo4B9Y"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "963651852002-e1aph5lqp2sc9oa40vnsqv7bag6fd562.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -48,6 +48,22 @@ class FirebaseGoogleAuthService implements AuthService {
     await _auth.signOut();
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    // Firebase requires a *recent* sign-in before allowing account deletion
+    // (`requires-recent-login`) — re-run the same credential flow `signIn()`
+    // uses to satisfy that, rather than assuming the existing session is
+    // fresh enough.
+    final googleAccount = await _googleSignIn.authenticate();
+    final idToken = googleAccount.authentication.idToken;
+    final credential = fb.GoogleAuthProvider.credential(idToken: idToken);
+    await user.reauthenticateWithCredential(credential);
+    await user.delete();
+    await _googleSignIn.signOut();
+  }
+
   AppUser? _toAppUser(fb.User? user) {
     if (user == null) return null;
     return AppUser(uid: user.uid, displayName: user.displayName, email: user.email);

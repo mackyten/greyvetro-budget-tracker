@@ -16,8 +16,7 @@ lib/
 │   │   └── month_summary.dart           # computed totals/savings/% change (never persisted)
 │   ├── data/
 │   │   ├── budget_repository.dart       # storage-agnostic interface
-│   │   ├── firestore_budget_repository.dart
-│   │   └── seed_importer.dart           # one-time import of the original spreadsheet history
+│   │   └── firestore_budget_repository.dart
 │   └── ui/
 │       ├── month_list_screen.dart       # home: month list + net savings trend
 │       ├── month_detail_screen.dart     # edit a month's balances, live-computed totals
@@ -44,9 +43,10 @@ month-over-month % change, current month saved) is computed client-side by
 drift out of sync the way a spreadsheet formula copy-paste can.
 
 `assets/seed/net_worth_seed.json` is the actual historical data extracted
-from `Budget Tracker 2.numbers` (Apr 2025 – Jul 2026, 23 accounts). The app
-imports it automatically on first launch if the `accounts` collection is
-still empty — it never overwrites existing data.
+from `Budget Tracker 2.numbers` (Apr 2025 – Jul 2026, 23 accounts). It was
+one-time imported into the original owner's account; the app no longer
+auto-imports it (that auto-import used to run for every new sign-in, not
+just the original owner — every account starts empty now).
 
 ## Setup
 
@@ -90,9 +90,11 @@ the device.
 `AuthService` (`lib/core/auth/auth_service.dart`) is a small provider-agnostic
 interface; `FirebaseGoogleAuthService` is the only implementation today. Data
 written before auth existed (top-level `accounts`/`monthlyEntries`
-collections) is copied into the signed-in user's `users/{uid}/...` namespace
-automatically on first sign-in — see
-`lib/features/net_worth/data/legacy_data_migrator.dart`.
+collections, pre-TASK-001) was one-time migrated into the owning user's
+`users/{uid}/...` namespace and the legacy top-level collections have since
+been deleted, along with the temporary rule and migrator code that supported
+that migration — `firestore.rules` now only ever grants access to
+`users/{uid}/...`, scoped to that uid.
 
 ### Planned: greyvetro-auth-hub integration
 
@@ -111,6 +113,3 @@ implementation and pointing `main.dart` at it. Not started yet — tracked in
 
 - `lib/firebase_options.dart` is a placeholder; run `flutterfire configure`
   before shipping to a real device/project.
-- The read-only legacy `accounts`/`monthlyEntries` rules in
-  `firestore.rules` should be deleted once the one-time migration is
-  confirmed to have run (check `users/{uid}/accounts` in the console).

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -11,9 +10,7 @@ import 'core/pin_lock/pin_gate.dart';
 import 'core/theme_controller.dart';
 import 'features/net_worth/data/budget_repository.dart';
 import 'features/net_worth/data/firestore_budget_repository.dart';
-import 'features/net_worth/data/legacy_data_migrator.dart';
 import 'features/net_worth/data/reminder_scheduler.dart';
-import 'features/net_worth/data/seed_importer.dart';
 import 'features/net_worth/ui/home_screen.dart';
 import 'firebase_options.dart';
 
@@ -33,15 +30,15 @@ Future<void> main() async {
 /// [FirestoreBudgetRepository] itself takes an injectable `firestore` param.
 typedef RepositoryBuilder = BudgetRepository Function(String uid);
 
-/// Runs once per signed-in session before the app is shown — normally
-/// migrating pre-auth data then seeding on first ever use. Overridable in
-/// tests to skip both (they need real Firestore).
+/// Runs once per signed-in session before the app is shown — a seam for any
+/// one-time-per-session async prep a signed-in user might need. Nothing
+/// uses it today: the original spreadsheet-seed import was removed once it
+/// had served its one-time purpose for the original owner's account, since
+/// it was otherwise copying that data into every new account that signed
+/// in. Overridable in tests.
 typedef AppPreparer = Future<void> Function(BudgetRepository repository, String uid);
 
-Future<void> _defaultPrepare(BudgetRepository repository, String uid) async {
-  await migrateLegacyDataIfNeeded(FirebaseFirestore.instance, uid);
-  await importSeedIfEmpty(repository);
-}
+Future<void> _defaultPrepare(BudgetRepository repository, String uid) async {}
 
 class BudgetTrackerApp extends StatelessWidget {
   BudgetTrackerApp({
@@ -72,6 +69,7 @@ class BudgetTrackerApp extends StatelessWidget {
             authService: authService,
             builder: (context, user) => _AuthenticatedApp(
               user: user,
+              authService: authService,
               themeController: _themeController,
               repositoryBuilder: repositoryBuilder,
               prepare: prepare,
@@ -88,12 +86,14 @@ class BudgetTrackerApp extends StatelessWidget {
 class _AuthenticatedApp extends StatefulWidget {
   const _AuthenticatedApp({
     required this.user,
+    required this.authService,
     required this.themeController,
     required this.repositoryBuilder,
     required this.prepare,
   });
 
   final AppUser user;
+  final AuthService authService;
   final ThemeController themeController;
   final RepositoryBuilder repositoryBuilder;
   final AppPreparer prepare;
@@ -117,6 +117,7 @@ class _AuthenticatedAppState extends State<_AuthenticatedApp> {
         return PinGate(
           child: HomeScreen(
             repository: _repository,
+            authService: widget.authService,
             themeController: widget.themeController,
           ),
         );

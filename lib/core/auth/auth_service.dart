@@ -20,4 +20,11 @@ abstract class AuthService {
   Future<AppUser> signIn();
 
   Future<void> signOut();
+
+  /// Permanently deletes the signed-in identity itself (not the user's
+  /// Firestore data — callers wipe that separately via
+  /// `BudgetRepository.deleteAllData()` first, since Firestore's security
+  /// rules require an intact `request.auth` to allow the delete). Leaves the
+  /// caller signed out, same as [signOut].
+  Future<void> deleteAccount();
 }

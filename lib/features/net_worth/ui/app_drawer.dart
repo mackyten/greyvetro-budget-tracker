@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../../../core/theme_controller.dart';
@@ -17,9 +18,15 @@ import 'settings_screen.dart';
 /// on the bottom nav (Home/Dashboard/Accounts already own that). Opened from
 /// Home's app bar.
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key, required this.repository, required this.themeController});
+  const AppDrawer({
+    super.key,
+    required this.repository,
+    required this.authService,
+    required this.themeController,
+  });
 
   final BudgetRepository repository;
+  final AuthService authService;
   final ThemeController themeController;
 
   @override
@@ -42,7 +49,11 @@ class AppDrawer extends StatelessWidget {
                   Navigator.of(context).pop();
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => SettingsScreen(themeController: themeController),
+                      builder: (_) => SettingsScreen(
+                        themeController: themeController,
+                        repository: repository,
+                        authService: authService,
+                      ),
                     ),
                   );
                 },
@@ -102,9 +113,12 @@ class AppDrawer extends StatelessWidget {
               _DrawerRow(
                 icon: Icons.logout,
                 label: 'Sign out',
-                trailing: 'Soon',
-                disabled: true,
-                onTap: () {},
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  // AuthGate rebuilds from authStateChanges() once this
+                  // completes; nothing else to do here.
+                  await authService.signOut();
+                },
               ),
             ],
           ),
@@ -115,64 +129,35 @@ class AppDrawer extends StatelessWidget {
 }
 
 class _DrawerRow extends StatelessWidget {
-  const _DrawerRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.trailing,
-    this.disabled = false,
-  });
+  const _DrawerRow({required this.icon, required this.label, required this.onTap});
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final String? trailing;
-  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final color = disabled ? palette.muted : palette.heading;
-    return Opacity(
-      opacity: disabled ? 0.55 : 1,
-      child: InkWell(
-        onTap: disabled ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: uiFont,
-                    color: color,
-                  ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: palette.heading),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: uiFont,
+                  color: palette.heading,
                 ),
               ),
-              if (trailing != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: palette.border,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    trailing!,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: uiFont,
-                      color: palette.muted,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

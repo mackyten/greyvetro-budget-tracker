@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
 import '../../../core/theme_controller.dart';
@@ -28,9 +29,15 @@ import 'snapshots_screen.dart';
 /// Snapshots are pushed sub-screens reached via the nav cards, and secondary
 /// destinations (Settings/Export/Help/Vault) live in the drawer.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.repository, required this.themeController});
+  const HomeScreen({
+    super.key,
+    required this.repository,
+    required this.authService,
+    required this.themeController,
+  });
 
   final BudgetRepository repository;
+  final AuthService authService;
   final ThemeController themeController;
 
   @override
@@ -109,7 +116,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      endDrawer: AppDrawer(repository: widget.repository, themeController: widget.themeController),
+      endDrawer: AppDrawer(
+        repository: widget.repository,
+        authService: widget.authService,
+        themeController: widget.themeController,
+      ),
       body: Builder(
         builder: (context) => SafeArea(
           child: Padding(

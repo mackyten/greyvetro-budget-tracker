@@ -69,4 +69,25 @@ class FirestoreBudgetRepository implements BudgetRepository {
   Future<void> saveMonthlyEntry(MonthlyEntry entry) {
     return _monthlyEntries.doc(entry.id).set(entry.toMap());
   }
+
+  @override
+  Future<void> deleteAllData() async {
+    await _deleteAllDocs(_accounts);
+    await _deleteAllDocs(_monthlyEntries);
+    await _userDoc.delete();
+  }
+
+  /// Deletes every doc in [collection] in batches of 400 — comfortably under
+  /// Firestore's 500-write-per-batch limit, since a single account's data is
+  /// small but there's no fixed upper bound on it.
+  Future<void> _deleteAllDocs(CollectionReference<Map<String, dynamic>> collection) async {
+    final snapshot = await collection.get();
+    for (var i = 0; i < snapshot.docs.length; i += 400) {
+      final batch = _db.batch();
+      for (final doc in snapshot.docs.skip(i).take(400)) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
 }

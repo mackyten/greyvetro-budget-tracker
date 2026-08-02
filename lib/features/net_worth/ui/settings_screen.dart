@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/pin_lock/biometric_auth.dart';
 import '../../../core/pin_lock/create_pin_screen.dart';
 import '../../../core/pin_lock/pin_store.dart';
 import '../../../core/pin_lock/verify_pin_screen.dart';
 import '../../../core/theme_controller.dart';
+import '../../vault/data/vault_store.dart';
+import '../data/budget_repository.dart';
 import '../data/net_worth_preferences.dart';
 import 'design_chip.dart';
 import 'ghost_icon_button.dart';
@@ -15,9 +18,16 @@ import 'milestones_settings_screen.dart';
 import 'pill_switch.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.themeController});
+  const SettingsScreen({
+    super.key,
+    required this.themeController,
+    required this.repository,
+    required this.authService,
+  });
 
   final ThemeController themeController;
+  final BudgetRepository repository;
+  final AuthService authService;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -28,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pinEnabled = false;
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
+  bool _deletingAccount = false;
 
   final _inflationRateController = TextEditingController();
   Timer? _inflationSaveTimer;
@@ -114,6 +125,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).push<String>(MaterialPageRoute(builder: (_) => const CreatePinScreen()));
     if (newPin == null) return;
     await PinStore.instance.setPin(newPin);
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: const Text(
+          'This permanently deletes your synced accounts and monthly '
+          'entries, and clears anything stored only on this device (Secure '
+          'Vault, PIN). This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppPalette.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _deleteAccount();
+  }
+
+  Future<void> _deleteAccount() async {
+    setState(() => _deletingAccount = true);
+    try {
+      // Firestore data first — its security rules need an intact
+      // `request.auth` to allow the delete, so this has to happen before
+      // authService.deleteAccount() removes the identity it's keyed on.
+      await widget.repository.deleteAllData();
+      await VaultStore.instance.clearAll();
+      await PinStore.instance.clear();
+      await widget.authService.deleteAccount();
+      if (!mounted) return;
+      // AuthGate (above this pushed route) has already swapped to
+      // SignInScreen from authStateChanges(); pop back to it.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _deletingAccount = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't delete your account. Please try again."),
+        ),
+      );
+    }
   }
 
   @override
@@ -426,6 +489,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             Icon(Icons.chevron_right, size: 20, color: palette.muted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _SectionLabel('Account'),
+                  const SizedBox(height: 4),
+                  Material(
+                    color: palette.surfaceAlt,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: _deletingAccount ? null : _confirmDeleteAccount,
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: palette.border),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Delete my account',
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                      fontFamily: uiFont,
+                                      color: AppPalette.error,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Erases synced data and everything stored on this device',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: uiFont,
+                                      color: palette.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_deletingAccount)
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else
+                              Icon(Icons.chevron_right, size: 20, color: palette.muted),
                           ],
                         ),
                       ),
