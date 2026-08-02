@@ -114,10 +114,12 @@ Play Console actually asks for when you get there)
 - ✅ Hi-res icon (512×512, 32-bit PNG w/ alpha) — generated, see
   `store_assets/play_store_icon_512.png` (sourced from
   `logos/greyvetro-appicon-dark.png`)
+- ✅ Phone screenshots — captured live from the RMX3461 on real account
+  data, in `store_assets/screenshots/`: `1_dashboard.jpg` (net worth +
+  trend chart), `2_snapshots.jpg` (monthly history), `3_month_detail.jpg`
+  (balance entry w/ voice input), `4_manage_accounts.jpg` (multi-account
+  list). Pillarboxed to 1280×2412 (ratio 1.88, under Play's 2:1 cap —
+  the device's native 1080×2412 is 2.23:1 and would've been rejected on
+  upload) and saved as JPEG (no alpha channel, per spec).
 - ❌ Feature graphic (1024×500, JPG/PNG no alpha) — needs actual design
   work, nothing in `logos/`/`assets/branding/` matches this aspect ratio
-- ❌ Phone screenshots (min 2, 16:9 or 9:16, min 320px short side) — grab
-  these from a real device/emulator run once you can test on one; the
-  README's "Known issues" section flags `flutter run` hangs on the
-  RMX3461 test device specifically, use a different device/emulator for
-  this

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -33,12 +34,21 @@ class ReminderScheduler {
 
     const androidSettings = AndroidInitializationSettings('ic_notification');
     const settings = InitializationSettings(android: androidSettings);
-    await _plugin.initialize(settings: settings);
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    _initialized = true;
+    // This is startup-critical: `main.dart` awaits `init()` before `runApp()`,
+    // so any uncaught exception here (e.g. a plugin/platform hiccup like a
+    // missing notification icon resource) would otherwise take down the
+    // entire app before it ever renders a frame. The reminder is a
+    // nice-to-have — losing it silently beats a blank-screen crash.
+    try {
+      await _plugin.initialize(settings: settings);
+      await _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+      _initialized = true;
+    } catch (error, stackTrace) {
+      debugPrint('ReminderScheduler.init failed, continuing without reminders: $error');
+      if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   /// Pure and testable: true when [now]'s month has no logged entry yet and
