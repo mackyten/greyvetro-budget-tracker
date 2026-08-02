@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      drawer: AppDrawer(repository: widget.repository, themeController: widget.themeController),
+      endDrawer: AppDrawer(repository: widget.repository, themeController: widget.themeController),
       body: Builder(
         builder: (context) => SafeArea(
           child: Padding(
@@ -119,6 +119,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1, right: 10),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.asset(
+                          'assets/branding/app_mark.png',
+                          width: 36,
+                          height: 36,
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     GhostIconButton(
                       icon: Icons.menu,
-                      onPressed: () => Scaffold.of(context).openDrawer(),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
                     ),
                   ],
                 ),
@@ -276,13 +287,27 @@ class _SectionLabel extends StatelessWidget {
 /// vs.-last-month delta pill. Uses [MonthSummary.currentMonthSaved] /
 /// [MonthSummary.momChangePct] directly rather than re-diffing, since those
 /// are already computed against the immediately preceding month.
-class _HeroNetWorthCard extends StatelessWidget {
+class _HeroNetWorthCard extends StatefulWidget {
   const _HeroNetWorthCard({required this.summaries});
 
   final List<MonthSummary> summaries;
 
   @override
+  State<_HeroNetWorthCard> createState() => _HeroNetWorthCardState();
+}
+
+class _HeroNetWorthCardState extends State<_HeroNetWorthCard> {
+  /// Off by default — balances are shown in the clear until the user
+  /// explicitly taps the eye toggle to mask them for privacy.
+  bool _hidden = false;
+
+  static const _maskedAmount = '₱ ********';
+
+  String _amount(double value) => _hidden ? _maskedAmount : currencyFormat.format(value);
+
+  @override
   Widget build(BuildContext context) {
+    final summaries = widget.summaries;
     final latest = summaries.isEmpty ? null : summaries.last;
     final netWorth = latest?.netSavings ?? 0.0;
     final assets = latest?.totalAssets ?? 0.0;
@@ -306,19 +331,36 @@ class _HeroNetWorthCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'NET WORTH',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-              fontFamily: uiFont,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'NET WORTH',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  fontFamily: uiFont,
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => setState(() => _hidden = !_hidden),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    _hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    size: 18,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
-            currencyFormat.format(netWorth),
+            _amount(netWorth),
             style: const TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
@@ -369,7 +411,7 @@ class _HeroNetWorthCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        currencyFormat.format(assets),
+                        _amount(assets),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -397,7 +439,7 @@ class _HeroNetWorthCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        currencyFormat.format(reserved),
+                        _amount(reserved),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,

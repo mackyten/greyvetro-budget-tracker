@@ -79,9 +79,15 @@ class AppDrawer extends StatelessWidget {
                   Navigator.of(context).pop();
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const PlaceholderScreen(
+                      builder: (routeContext) => PlaceholderScreen(
                         headerTitle: 'Help & About',
                         icon: Icons.help_outline,
+                        logo: Image.asset(
+                          Theme.of(routeContext).brightness == Brightness.dark
+                              ? 'assets/branding/lockup_dark.png'
+                              : 'assets/branding/lockup_light.png',
+                          height: 40,
+                        ),
                         heading: 'Net Worth Tracker',
                         subtitle: 'Version 1.0.0',
                         message: 'Track assets, liabilities and savings across all your '
@@ -188,14 +194,23 @@ class _DrawerHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Net Worth Tracker',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              fontFamily: uiFont,
-              color: palette.heading,
-            ),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(7),
+                child: Image.asset('assets/branding/app_mark.png', width: 28, height: 28),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                'Net Worth Tracker',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: uiFont,
+                  color: palette.heading,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           StreamBuilder<List<Account>>(

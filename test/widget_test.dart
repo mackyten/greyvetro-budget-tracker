@@ -5,11 +5,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:greyvetro_budget_tracker/core/auth/app_user.dart';
+import 'package:greyvetro_budget_tracker/core/auth/auth_service.dart';
 import 'package:greyvetro_budget_tracker/core/pin_lock/pin_store.dart';
 import 'package:greyvetro_budget_tracker/features/net_worth/data/budget_repository.dart';
 import 'package:greyvetro_budget_tracker/features/net_worth/models/account.dart';
 import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
 import 'package:greyvetro_budget_tracker/main.dart';
+
+/// Always-signed-in fake so widget tests can reach the app without touching
+/// real Firebase Auth.
+class _FakeAuthService implements AuthService {
+  static const _user = AppUser(uid: 'test-uid');
+
+  @override
+  Stream<AppUser?> authStateChanges() => Stream.value(_user);
+
+  @override
+  AppUser? get currentUser => _user;
+
+  @override
+  Future<AppUser> signIn() async => _user;
+
+  @override
+  Future<void> signOut() async {}
+}
 
 /// Fake secure-storage backend so `PinGate`'s `PinStore.isEnabled()` check
 /// resolves instead of hitting an unmocked platform channel — same fake used
@@ -101,7 +121,13 @@ void main() {
   });
 
   testWidgets('Home screen renders with no data', (tester) async {
-    await tester.pumpWidget(BudgetTrackerApp(repository: _FakeBudgetRepository()));
+    await tester.pumpWidget(
+      BudgetTrackerApp(
+        authService: _FakeAuthService(),
+        repositoryBuilder: (_) => _FakeBudgetRepository(),
+        prepare: (_, _) async {},
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Net Worth Tracker'), findsOneWidget);

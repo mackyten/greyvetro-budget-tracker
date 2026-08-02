@@ -19,11 +19,19 @@ Future<void> openVault(
   BuildContext context, {
   List<VaultAccountRef> accounts = const [],
 }) async {
+  // Captured once, up front, instead of re-deriving `Navigator.of(context)`
+  // after each await below: `context` here is the tapped drawer row's, and
+  // the drawer (and everything in it) gets disposed ~250ms after it closes —
+  // long before the user finishes a biometric prompt or PIN entry. The
+  // NavigatorState itself outlives that, so it's what subsequent
+  // navigation/mounted checks need to key off of.
+  final navigator = Navigator.of(context);
+
   final pinIsSet = await PinStore.instance.isSet();
-  if (!context.mounted) return;
+  if (!navigator.mounted) return;
 
   if (!pinIsSet) {
-    await Navigator.of(context).push(
+    await navigator.push(
       MaterialPageRoute(builder: (_) => const VaultSetupRequiredScreen()),
     );
     return;
@@ -31,28 +39,28 @@ Future<void> openVault(
 
   final biometricReady = await PinStore.instance.isBiometricEnabled() &&
       await BiometricAuth.instance.isAvailable();
-  if (!context.mounted) return;
+  if (!navigator.mounted) return;
 
   var unlocked = false;
   if (biometricReady) {
     unlocked = await BiometricAuth.instance.authenticate(reason: 'Unlock Secure Vault');
-    if (!context.mounted) return;
+    if (!navigator.mounted) return;
   }
 
   if (!unlocked) {
-    final verified = await Navigator.of(context).push<bool>(
+    final verified = await navigator.push<bool>(
       MaterialPageRoute(
         builder: (_) => const VerifyPinScreen(title: 'Enter PIN to open Vault'),
       ),
     );
-    if (verified != true || !context.mounted) return;
+    if (verified != true || !navigator.mounted) return;
     unlocked = true;
   }
 
   await VaultStore.instance.loadAll();
-  if (!context.mounted) return;
+  if (!navigator.mounted) return;
 
-  Navigator.of(context).push(
+  navigator.push(
     MaterialPageRoute(builder: (_) => VaultHomeScreen(accounts: accounts)),
   );
 }

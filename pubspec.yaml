@@ -51,6 +51,8 @@ dependencies:
   timezone: ^0.11.1
   speech_to_text: ^7.4.0
   home_widget: ^0.9.3
+  firebase_auth: ^5.7.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +79,10 @@ flutter:
 
   assets:
     - assets/seed/net_worth_seed.json
+    - assets/branding/app_mark.png
+    - assets/branding/logo_mark.png
+    - assets/branding/lockup_light.png
+    - assets/branding/lockup_dark.png
 
   fonts:
     - family: Manrope

@@ -5,8 +5,8 @@ import '../data/budget_repository.dart';
 import '../models/account.dart';
 import 'design_chip.dart';
 import 'ghost_icon_button.dart';
-import 'gradient_fab.dart';
 import 'pill_switch.dart';
+import 'solid_icon_button.dart';
 
 class ManageAccountsScreen extends StatelessWidget {
   const ManageAccountsScreen({super.key, required this.repository});
@@ -44,7 +44,10 @@ class ManageAccountsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 38),
+                  SolidIconButton(
+                    icon: Icons.add,
+                    onPressed: () => _showAddSheet(context, repository),
+                  ),
                 ],
               ),
             ),
@@ -64,7 +67,7 @@ class ManageAccountsScreen extends StatelessWidget {
                       .toList();
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 96),
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                     children: [
                       const _GroupHeader('Assets'),
                       for (final a in assets) _AccountTile(account: a, repository: repository),
@@ -78,7 +81,6 @@ class ManageAccountsScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: GradientFab(onPressed: () => _showAddSheet(context, repository)),
     );
   }
 
@@ -98,6 +100,8 @@ class ManageAccountsScreen extends StatelessWidget {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
+            final isCash = section == AccountSection.asset &&
+                nameController.text.trim().toLowerCase() == 'cash';
             final palette = sheetContext.palette;
             final fieldLabelStyle = TextStyle(
               fontSize: 12,
@@ -150,6 +154,7 @@ class ManageAccountsScreen extends StatelessWidget {
                           TextField(
                             controller: nameController,
                             autofocus: true,
+                            onChanged: (_) => setSheetState(() {}),
                             style: TextStyle(fontSize: 13.5, fontFamily: uiFont, color: palette.heading),
                             decoration: InputDecoration(
                               hintText: 'e.g. Metrobank Savings',
@@ -209,7 +214,7 @@ class ManageAccountsScreen extends StatelessWidget {
                               ],
                             ),
                           ],
-                          if (section == AccountSection.asset)
+                          if (isCash)
                             Container(
                               margin: const EdgeInsets.only(top: 16),
                               padding: const EdgeInsets.all(12),
@@ -292,8 +297,7 @@ class ManageAccountsScreen extends StatelessWidget {
                                               ? reservedKind
                                               : null,
                                           order: order,
-                                          cashCounter:
-                                              section == AccountSection.asset ? cashCounter : false,
+                                          cashCounter: isCash ? cashCounter : false,
                                         ),
                                       );
                                       if (sheetContext.mounted) Navigator.of(sheetContext).pop();
@@ -371,9 +375,11 @@ class _AccountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final isCashAccount =
+        account.section == AccountSection.asset && account.name.trim().toLowerCase() == 'cash';
     final subtitle = account.reservedKind != null
         ? (account.reservedKind == ReservedKind.creditCard ? 'Credit card' : 'Reserved fund')
-        : (account.cashCounter ? 'Cash counter enabled' : 'Cash counter off');
+        : (isCashAccount ? (account.cashCounter ? 'Cash counter enabled' : 'Cash counter off') : null);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -394,14 +400,15 @@ class _AccountTile extends StatelessWidget {
                     decoration: account.active ? null : TextDecoration.lineThrough,
                   ),
                 ),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
-                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
+                  ),
               ],
             ),
           ),
-          if (account.section == AccountSection.asset) ...[
+          if (isCashAccount) ...[
             _CashCounterToggle(account: account, repository: repository),
             const SizedBox(width: 6),
           ],

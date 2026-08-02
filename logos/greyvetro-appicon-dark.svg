@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="gvGradient" x1="76.5" y1="76.5" x2="435.5" y2="435.5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3E9AC4"/><stop offset="1" stop-color="#E58D9E"/></linearGradient>
+    <clipPath id="squircle2"><rect x="0" y="0" width="512" height="512" rx="114" ry="114"/></clipPath>
+  </defs>
+  <g clip-path="url(#squircle2)">
+    <rect width="512" height="512" fill="#12151A"/>
+    <path d="M 351.45 376.68 L 260.10 425.00 L 152.44 392.98 L 93.89 285.33 L 131.70 156.94 L 260.10 87.00 L 418.11 127.31 L 323.30 222.12 L 260.10 195.94 L 196.89 222.12 L 170.71 285.33 L 196.89 348.54 L 260.10 374.72 L 323.30 348.54 Z" fill="url(#gvGradient)"/><path d="M 253.11 286.73 L 359.26 286.73 L 359.26 325.84 L 253.11 325.84 Z" fill="url(#gvGradient)"/>
+  </g>
+</svg>

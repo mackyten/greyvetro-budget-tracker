@@ -55,7 +55,7 @@ class PinKeypad extends StatelessWidget {
                   : null,
             ),
             const Spacer(),
-            const Icon(Icons.lock_outline, size: 36, color: AppPalette.blueDeep),
+            Image.asset('assets/branding/logo_mark.png', width: 52, height: 52),
             const SizedBox(height: 14),
             Text(
               title,

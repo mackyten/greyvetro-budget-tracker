@@ -18,21 +18,48 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Greyvetro personal net worth / liquidity tracker">
+  <meta name="theme-color" content="#12151A">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="greyvetro_budget_tracker">
+  <meta name="apple-mobile-web-app-title" content="Greyvetro">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>greyvetro_budget_tracker</title>
+  <title>Greyvetro Budget Tracker</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    #app-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #12151A;
+      z-index: 9999;
+      transition: opacity 0.25s ease-out;
+    }
+    #app-splash img {
+      width: 96px;
+      height: 96px;
+    }
+    #app-splash.app-splash-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
+  <!-- Shown until the first Flutter frame is drawn, then removed below. -->
+  <div id="app-splash">
+    <img src="icons/Icon-512.png" alt="Greyvetro" />
+  </div>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -42,5 +69,24 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    (function () {
+      var splash = document.getElementById('app-splash');
+      var dismissed = false;
+      function dismissSplash() {
+        if (dismissed || !splash) return;
+        dismissed = true;
+        splash.classList.add('app-splash-hidden');
+        setTimeout(function () { splash.remove(); }, 300);
+      }
+      window.addEventListener('flutter-first-frame', dismissSplash);
+      // Safety net: if the app fails to boot (no web Firebase config is a
+      // known case here — see firebase_options.dart) there's no first-frame
+      // event to wait for, so the splash must not sit there forever.
+      window.addEventListener('error', dismissSplash);
+      window.addEventListener('unhandledrejection', dismissSplash);
+      setTimeout(dismissSplash, 15000);
+    })();
+  </script>
 </body>
 </html>

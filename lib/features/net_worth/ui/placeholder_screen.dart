@@ -11,6 +11,7 @@ class PlaceholderScreen extends StatelessWidget {
     super.key,
     required this.headerTitle,
     required this.icon,
+    this.logo,
     required this.heading,
     this.subtitle,
     required this.message,
@@ -19,6 +20,11 @@ class PlaceholderScreen extends StatelessWidget {
 
   final String headerTitle;
   final IconData icon;
+
+  /// When set, replaces the [icon] glyph with a brand image (used by the
+  /// Help/About screen to show the real Greyvetro logo instead of a generic
+  /// icon).
+  final Widget? logo;
   final String heading;
   final String? subtitle;
   final String message;
@@ -65,7 +71,7 @@ class PlaceholderScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon, size: 40, color: palette.muted),
+                      logo ?? Icon(icon, size: 40, color: palette.muted),
                       const SizedBox(height: 6),
                       Text(
                         heading,

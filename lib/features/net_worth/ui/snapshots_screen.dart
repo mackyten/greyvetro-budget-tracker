@@ -6,21 +6,56 @@ import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'ghost_icon_button.dart';
-import 'gradient_fab.dart';
 import 'month_detail_screen.dart';
 import 'month_row_tile.dart';
+import 'solid_icon_button.dart';
 
 /// Full month list, pushed from [HomeScreen]'s "Snapshots" nav card or its
-/// "Recent snapshots" → See all link. Owns the add-month FAB — the design
-/// moved it here from Home, where it no longer appears.
-class SnapshotsScreen extends StatelessWidget {
+/// "Recent snapshots" → See all link. Owns the add-month header button — the
+/// design moved it here from Home, where it no longer appears.
+class SnapshotsScreen extends StatefulWidget {
   const SnapshotsScreen({super.key, required this.repository});
 
   final BudgetRepository repository;
 
   @override
+  State<SnapshotsScreen> createState() => _SnapshotsScreenState();
+}
+
+class _SnapshotsScreenState extends State<SnapshotsScreen> {
+  static const int _pageSize = 20;
+  static const double _loadMoreThreshold = 200;
+
+  final ScrollController _scrollController = ScrollController();
+  int _visibleCount = _pageSize;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels < position.maxScrollExtent - _loadMoreThreshold) {
+      return;
+    }
+    setState(() => _visibleCount += _pageSize);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final repository = widget.repository;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -48,7 +83,15 @@ class SnapshotsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 38),
+                  StreamBuilder<List<MonthlyEntry>>(
+                    stream: repository.watchMonthlyEntries(),
+                    builder: (context, snap) {
+                      return SolidIconButton(
+                        icon: Icons.add,
+                        onPressed: () => _addNextMonth(context, snap.data ?? const []),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -82,10 +125,29 @@ class SnapshotsScreen extends StatelessWidget {
                         accounts: accounts,
                       ).reversed.toList();
 
+                      final visibleCount = _visibleCount < summaries.length
+                          ? _visibleCount
+                          : summaries.length;
+                      final hasMore = visibleCount < summaries.length;
+
                       return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
-                        itemCount: summaries.length,
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                        itemCount: visibleCount + (hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index >= visibleCount) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                                ),
+                              ),
+                            );
+                          }
+
                           final summary = summaries[index];
                           final previous = entries
                               .where((e) => e.month.isBefore(summary.entry.month))
@@ -115,12 +177,6 @@ class SnapshotsScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: StreamBuilder<List<MonthlyEntry>>(
-        stream: repository.watchMonthlyEntries(),
-        builder: (context, snap) {
-          return GradientFab(onPressed: () => _addNextMonth(context, snap.data ?? const []));
-        },
-      ),
     );
   }
 
@@ -128,6 +184,7 @@ class SnapshotsScreen extends StatelessWidget {
     BuildContext context,
     List<MonthlyEntry> entries,
   ) async {
+    final repository = widget.repository;
     final DateTime nextMonth;
     if (entries.isEmpty) {
       final now = DateTime.now();

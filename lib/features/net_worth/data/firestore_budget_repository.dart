@@ -4,22 +4,26 @@ import '../models/account.dart';
 import '../models/monthly_entry.dart';
 import 'budget_repository.dart';
 
-/// Firestore-backed [BudgetRepository].
+/// Firestore-backed [BudgetRepository], scoped to the signed-in user.
 ///
-/// Collections (top-level, single-user — see README for the planned
-/// per-user scoping once greyvetro-auth-hub is wired in):
-///   accounts/{accountId}       -> Account.toMap()
-///   monthlyEntries/{YYYY-MM}   -> MonthlyEntry.toMap()
+/// Collections (nested under the owning user, per Firestore rules keyed on
+/// `request.auth.uid` — see firestore.rules):
+///   users/{uid}/accounts/{accountId}       -> Account.toMap()
+///   users/{uid}/monthlyEntries/{YYYY-MM}   -> MonthlyEntry.toMap()
 class FirestoreBudgetRepository implements BudgetRepository {
-  FirestoreBudgetRepository({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+  FirestoreBudgetRepository({required String uid, FirebaseFirestore? firestore})
+      : _uid = uid,
+        _db = firestore ?? FirebaseFirestore.instance;
 
+  final String _uid;
   final FirebaseFirestore _db;
 
+  DocumentReference<Map<String, dynamic>> get _userDoc =>
+      _db.collection('users').doc(_uid);
   CollectionReference<Map<String, dynamic>> get _accounts =>
-      _db.collection('accounts');
+      _userDoc.collection('accounts');
   CollectionReference<Map<String, dynamic>> get _monthlyEntries =>
-      _db.collection('monthlyEntries');
+      _userDoc.collection('monthlyEntries');
 
   @override
   Stream<List<Account>> watchAccounts() {

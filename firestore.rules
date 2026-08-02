@@ -1,17 +1,28 @@
 rules_version = '2';
 
-// TEMPORARY: this app has no auth yet — greyvetro-auth-hub (Keycloak)
-// integration is planned but not wired in (see README.md / TASKS.md). Until
-// then there is no `request.auth` to key rules off of, so access is only
-// gated by a time window (mirrors Firebase Console's own "test mode"
-// default) so a forgotten deploy doesn't stay open forever.
-//
-// Replace this whole block with real per-user rules once auth-hub tokens
-// are exchanged for Firebase custom auth tokens.
+// Real per-user rules (TASK-001). Signed-in users authenticate directly
+// against Firebase Auth (Google Sign-In) today — see
+// lib/core/auth/firebase_google_auth_service.dart. When greyvetro-auth-hub
+// (Keycloak) is bridged in later, signed-in users will still be Firebase
+// Auth users (via a minted custom token instead of Google), so
+// `request.auth.uid` and these rules don't need to change — only the sign-in
+// flow does.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 10, 31);
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // TEMPORARY: pre-auth data written before per-user scoping existed (see
+    // lib/features/net_worth/data/legacy_data_migrator.dart), read-only to
+    // any signed-in user so the one-time migration can still read it once.
+    // Delete this block once `users/{uid}/accounts` in the console confirms
+    // migration ran.
+    match /accounts/{document} {
+      allow read: if request.auth != null;
+    }
+    match /monthlyEntries/{document} {
+      allow read: if request.auth != null;
     }
   }
 }

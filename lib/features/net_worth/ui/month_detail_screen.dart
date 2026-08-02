@@ -13,6 +13,8 @@ import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'cash_counter_sheet.dart';
 import 'ghost_icon_button.dart';
+import 'pill_switch.dart';
+import 'solid_icon_button.dart';
 import 'voice_amount_parser.dart';
 import 'voice_input_button.dart';
 
@@ -74,6 +76,10 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   bool _saving = false;
   Timer? _draftSaveTimer;
   late bool _locked;
+
+  /// Off by default — the previous-month balance is only shown per account
+  /// when the user explicitly opts in via the switch below the header.
+  bool _showPrevious = false;
 
   /// Set once the user explicitly taps Save — suppresses the dispose-time
   /// draft flush, since the data is now safely persisted server-side and any
@@ -308,26 +314,10 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                         onPressed: _toggleLock,
                       ),
                       const SizedBox(width: 8),
-                      SizedBox(
-                        width: 38,
-                        height: 38,
-                        child: Material(
-                          color: AppPalette.blueDeep,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: _saving ? null : _save,
-                            child: _saving
-                                ? const Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.check, color: Colors.white, size: 20),
-                          ),
-                        ),
+                      SolidIconButton(
+                        icon: Icons.check,
+                        loading: _saving,
+                        onPressed: _save,
                       ),
                     ],
                   ),
@@ -337,12 +327,46 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     children: [
+                      if (widget.previous != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 14),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Show previous month values',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: uiFont,
+                                  color: palette.text,
+                                ),
+                              ),
+                              PillSwitch(
+                                value: _showPrevious,
+                                onChanged: (v) => setState(() => _showPrevious = v),
+                              ),
+                            ],
+                          ),
+                        ),
                       _SectionHeader('Assets'),
                       for (final a in assets)
-                        _AccountRow(account: a, controller: _controllers[a.id]!, locked: _locked),
+                        _AccountRow(
+                          account: a,
+                          controller: _controllers[a.id]!,
+                          locked: _locked,
+                          previousBalance: widget.previous?.balances[a.id],
+                          showPrevious: _showPrevious,
+                        ),
                       _SectionHeader('Reserved & Liabilities'),
                       for (final a in reserved)
-                        _AccountRow(account: a, controller: _controllers[a.id]!, locked: _locked),
+                        _AccountRow(
+                          account: a,
+                          controller: _controllers[a.id]!,
+                          locked: _locked,
+                          previousBalance: widget.previous?.balances[a.id],
+                          showPrevious: _showPrevious,
+                        ),
                       Padding(
                         padding: const EdgeInsets.only(top: 18, bottom: 6),
                         child: Text(
@@ -415,11 +439,19 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _AccountRow extends StatelessWidget {
-  const _AccountRow({required this.account, required this.controller, required this.locked});
+  const _AccountRow({
+    required this.account,
+    required this.controller,
+    required this.locked,
+    this.previousBalance,
+    this.showPrevious = false,
+  });
 
   final Account account;
   final TextEditingController controller;
   final bool locked;
+  final double? previousBalance;
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
@@ -446,16 +478,29 @@ class _AccountRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              account.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                fontFamily: uiFont,
-                color: palette.heading,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  account.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: uiFont,
+                    color: palette.heading,
+                  ),
+                ),
+                if (showPrevious && previousBalance != null)
+                  Text(
+                    'Last month: ${currencyFormat.format(previousBalance)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10.5, fontFamily: uiFont, color: palette.muted),
+                  ),
+              ],
             ),
           ),
           if (account.cashCounter) ...[

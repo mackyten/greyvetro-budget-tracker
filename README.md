@@ -28,12 +28,15 @@ lib/
 
 ### Data model (Firestore)
 
-- `accounts/{accountId}` — one doc per tracked line item: `name`, `section`
-  (`asset` | `reservedLiability`), `reservedKind` (`reserved` | `creditCard`,
-  only for the reserved/liability section), `order`, `active`.
-- `monthlyEntries/{YYYY-MM}` — one doc per month: `balances` (map of
-  `accountId` → number, sparse — a missing key means blank, same as an empty
-  cell in the original sheet) and an optional `note`.
+Everything lives under the signed-in user, `users/{uid}/...` (`uid` is a
+Firebase Auth uid — see Authentication below):
+
+- `users/{uid}/accounts/{accountId}` — one doc per tracked line item: `name`,
+  `section` (`asset` | `reservedLiability`), `reservedKind` (`reserved` |
+  `creditCard`, only for the reserved/liability section), `order`, `active`.
+- `users/{uid}/monthlyEntries/{YYYY-MM}` — one doc per month: `balances` (map
+  of `accountId` → number, sparse — a missing key means blank, same as an
+  empty cell in the original sheet) and an optional `note`.
 
 Everything else (Total Assets, Total Reserved & Liabilities, Net Savings,
 month-over-month % change, current month saved) is computed client-side by
@@ -56,29 +59,58 @@ still empty — it never overwrites existing data.
    dart pub global activate flutterfire_cli
    flutterfire configure
    ```
-3. **Deploy Firestore rules/indexes**:
+3. **Enable Google Sign-In** in the Firebase console (Authentication →
+   Sign-in method → Google), and register your debug/release keystore's
+   SHA-1 fingerprint under the Android app's settings (Project settings →
+   your Android app → Add fingerprint). Get it with:
+   ```
+   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+   ```
+   Without this, Google Sign-In will fail on Android with an
+   `ApiException: 10` (`DEVELOPER_ERROR`).
+4. **Deploy Firestore rules/indexes**:
    ```
    firebase deploy --only firestore:rules,firestore:indexes
    ```
-   `firestore.rules` is a *temporary* time-boxed open rule (no `request.auth`
-   exists yet) — see the comment in that file. It must be replaced with real
-   per-user rules once greyvetro-auth-hub is wired in.
-4. **Run**:
+   `firestore.rules` scopes all reads/writes to `users/{uid}/...` via
+   `request.auth.uid` — see the comment in that file, and Authentication
+   below.
+5. **Run**:
    ```
    flutter run -d android
    ```
 
-## Planned: greyvetro-auth-hub integration
+## Authentication
+
+The app requires sign-in (Google, via Firebase Auth) before showing any
+data — see `lib/core/auth/`. This is separate from, and happens before, the
+local PIN/biometric lock: sign-in gates the Firestore backend, the PIN gates
+the device.
+
+`AuthService` (`lib/core/auth/auth_service.dart`) is a small provider-agnostic
+interface; `FirebaseGoogleAuthService` is the only implementation today. Data
+written before auth existed (top-level `accounts`/`monthlyEntries`
+collections) is copied into the signed-in user's `users/{uid}/...` namespace
+automatically on first sign-in — see
+`lib/features/net_worth/data/legacy_data_migrator.dart`.
+
+### Planned: greyvetro-auth-hub integration
 
 This app will eventually authenticate against `greyvetro-auth-hub`
-(Keycloak) instead of being a single-user app with open Firestore rules.
-That requires a backend step to exchange a verified Keycloak token for a
-Firebase custom auth token (Firestore has no native Keycloak/OIDC
-verification), then real per-user `request.auth.uid`-scoped rules. Not
-started yet — tracked in `TASKS.md`.
+(Keycloak) instead of signing in with Google directly. That requires a
+backend step to exchange a verified Keycloak token for a Firebase custom
+auth token (Firestore has no native Keycloak/OIDC verification), then
+`FirebaseAuth.instance.signInWithCustomToken`. Because that still produces a
+normal Firebase Auth session, `AppUser.uid`, `firestore.rules`, and
+`FirestoreBudgetRepository`'s `users/{uid}/...` paths all stay exactly as
+they are — the swap is contained to adding a new `AuthService`
+implementation and pointing `main.dart` at it. Not started yet — tracked in
+`TASKS.md`.
 
 ## Known issues / tech debt
 
-- Firestore rules are open (time-boxed) with no per-user auth — see above.
 - `lib/firebase_options.dart` is a placeholder; run `flutterfire configure`
   before shipping to a real device/project.
+- The read-only legacy `accounts`/`monthlyEntries` rules in
+  `firestore.rules` should be deleted once the one-time migration is
+  confirmed to have run (check `users/{uid}/accounts` in the console).
