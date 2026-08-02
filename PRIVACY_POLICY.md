@@ -5,8 +5,13 @@
 **Controller:** Greyvetro
 **Contact:** macky@greyvetro.com
 
-Also published (with formatting) at: https://claude.ai/code/artifact/ca7003fc-1aa3-4ba9-bf10-ceee2e5191c2
-— move this content to a domain you control before submitting to Play Console; the artifact link works as an interim public URL.
+Canonical, publicly hosted copy (this is the URL to submit in Play Console → App content →
+Privacy policy): https://greyvetro-budget-tracker.web.app/privacy
+— served from `public/privacy/index.html` in this repo via Firebase Hosting
+(`firebase deploy --only hosting`). Once `greyvetro.com` is mapped to this Hosting site
+(Firebase Console → Hosting → Add custom domain → DNS records added at Hostinger), the policy
+will also be reachable at https://greyvetro.com/privacy — update this line and the Play Console
+listing to that URL once the domain mapping is live.
 
 ## Overview
 
@@ -35,8 +40,8 @@ analytics trackers, and no data brokers anywhere in this app.
 ## What we collect
 
 **Account information.** You sign in with Google. We receive your email
-address, display name, and profile photo from Google Sign-In, via Firebase
-Authentication. This identifies your account and is the key everything else
+address and display name from Google Sign-In, via Firebase Authentication.
+This identifies your account and is the key everything else
 is scoped to — it is not used for marketing and never shared with
 advertisers.
 
@@ -119,10 +124,11 @@ uninstall the app, since it was never copied anywhere else.
   any time from Settings.
 - **Delete individual entries** directly in the app — archiving an account
   or clearing a month's figures removes them from Firestore immediately.
-- **Delete your account.** Email macky@greyvetro.com from the
-  address associated with your Google account and we'll erase your
-  Firestore data (accounts, monthly entries, profile link) within 30 days,
-  and confirm once it's done.
+- **Delete your account.** You can delete your account and all synced data
+  directly in the app, from Settings → Delete account. If you no longer have
+  the app installed, email macky@greyvetro.com from the address associated
+  with your Google account and we'll erase your Firestore data (accounts,
+  monthly entries, profile link) within 30 days, and confirm once it's done.
 - **Vault & PIN data** live only on your device, so deleting them is as
   simple as clearing the app's storage or uninstalling — there's nothing on
   our end to remove.

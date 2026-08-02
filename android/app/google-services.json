@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "963651852002-u043gmaefnbsat7qpvc0gt12ffbea8fq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.greyvetro.greyvetro_budget_tracker",
+            "certificate_hash": "e7d2b9da486282cd219c62c984e5d2b0ff54f2c0"
+          }
+        },
+        {
           "client_id": "963651852002-e1aph5lqp2sc9oa40vnsqv7bag6fd562.apps.googleusercontent.com",
           "client_type": 3
         }
