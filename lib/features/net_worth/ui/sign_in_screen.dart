@@ -31,7 +31,14 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await widget.authService.signIn();
       // AuthGate rebuilds from authStateChanges(); nothing else to do here.
-    } catch (_) {
+    } on AuthException catch (e) {
+      debugPrint('Sign-in failed: $e');
+      if (!mounted) return;
+      // A user-initiated cancel (closed the account picker) isn't a failure
+      // worth alarming them with.
+      if (!e.cancelled) setState(() => _error = e.message);
+    } catch (e, stackTrace) {
+      debugPrint('Sign-in failed: $e\n$stackTrace');
       if (!mounted) return;
       setState(() => _error = "Couldn't sign in. Please try again.");
     } finally {

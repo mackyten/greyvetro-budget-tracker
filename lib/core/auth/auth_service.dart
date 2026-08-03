@@ -28,3 +28,22 @@ abstract class AuthService {
   /// caller signed out, same as [signOut].
   Future<void> deleteAccount();
 }
+
+/// A sign-in/sign-out failure translated into a message that's safe to show
+/// directly to the user. Implementations catch their own provider's
+/// exceptions (`GoogleSignInException`, `FirebaseAuthException`, ...) and
+/// rethrow this instead, so callers like `SignInScreen` get a useful message
+/// without needing to import a provider SDK just to handle errors.
+class AuthException implements Exception {
+  const AuthException(this.message, {this.cancelled = false});
+
+  final String message;
+
+  /// True when the user themselves backed out (closed the account picker,
+  /// declined a permission) — callers should treat this as a no-op, not an
+  /// error worth alarming the user with.
+  final bool cancelled;
+
+  @override
+  String toString() => message;
+}
