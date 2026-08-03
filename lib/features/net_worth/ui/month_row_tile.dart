@@ -9,10 +9,20 @@ import '../models/month_summary.dart';
 /// "Recent snapshots" list and [SnapshotsScreen]'s full list so both stay
 /// pixel-identical to the design.
 class MonthRowTile extends StatelessWidget {
-  const MonthRowTile({super.key, required this.summary, required this.onTap});
+  const MonthRowTile({
+    super.key,
+    required this.summary,
+    required this.onTap,
+    this.selected = false,
+  });
 
   final MonthSummary summary;
   final VoidCallback onTap;
+
+  /// Highlights the row (blueDeep border + tinted background) for the wide
+  /// Snapshots split view, where the selected row also drives the inline
+  /// detail panel. Unused (and visually inert) on mobile.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -130,10 +140,13 @@ class MonthRowTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: palette.surface,
+        color: selected ? AppPalette.blueDeep.withValues(alpha: 0.05) : palette.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: palette.border),
+          side: BorderSide(
+            color: selected ? AppPalette.blueDeep : palette.border,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),

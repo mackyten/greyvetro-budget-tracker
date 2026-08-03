@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
+import '../../../core/responsive.dart';
 import '../../../core/theme_controller.dart';
 import '../data/budget_repository.dart';
 import '../data/home_widget_sync.dart';
@@ -20,7 +21,10 @@ import 'milestone_celebration_dialog.dart';
 import 'month_detail_screen.dart';
 import 'month_row_tile.dart';
 import 'net_worth_trends_section.dart';
+import 'sidebar_nav.dart';
 import 'snapshots_screen.dart';
+import 'wide_dashboard_view.dart';
+import 'wide_snapshots_view.dart';
 
 /// App root (behind `PinGate`): a single scrollable screen combining the
 /// net-worth hero card, Accounts/Snapshots nav cards, the Trends section,
@@ -46,6 +50,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<List<MonthlyEntry>>? _launchCheckSub;
+
+  // Wide-layout only: which inline section the persistent sidebar has
+  // selected, and which snapshot (if any) is shown in the Snapshots split
+  // view's detail column. Irrelevant on mobile, which keeps its own
+  // push-navigation flow untouched.
+  WideSection _wideSection = WideSection.dashboard;
+  String? _selectedSnapshotEntryId;
 
   @override
   void initState() {
@@ -114,6 +125,81 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return context.isWideLayout ? _buildWide(context) : _buildMobile(context);
+  }
+
+  Widget _buildWide(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SidebarNav(
+            repository: widget.repository,
+            authService: widget.authService,
+            themeController: widget.themeController,
+            selectedSection: _wideSection,
+            onSelectDashboard: () => setState(() => _wideSection = WideSection.dashboard),
+            onSelectSnapshots: () => setState(() => _wideSection = WideSection.snapshots),
+            onOpenAccounts: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ManageAccountsScreen(repository: widget.repository),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ColoredBox(
+              color: context.palette.bg,
+              child: StreamBuilder<List<Account>>(
+                stream: widget.repository.watchAccounts(),
+                builder: (context, accountsSnap) {
+                  if (!accountsSnap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final accounts = accountsSnap.data!;
+                  return StreamBuilder<List<MonthlyEntry>>(
+                    stream: widget.repository.watchMonthlyEntries(),
+                    builder: (context, entriesSnap) {
+                      if (!entriesSnap.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final entries = entriesSnap.data!;
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(40, 32, 40, 32),
+                        child: _wideSection == WideSection.dashboard
+                            ? SingleChildScrollView(
+                                child: WideDashboardView(
+                                  accounts: accounts,
+                                  entries: entries,
+                                  onSeeAllSnapshots: () => setState(() {
+                                    _wideSection = WideSection.snapshots;
+                                  }),
+                                  onSelectEntry: (id) => setState(() {
+                                    _wideSection = WideSection.snapshots;
+                                    _selectedSnapshotEntryId = id;
+                                  }),
+                                ),
+                              )
+                            : WideSnapshotsView(
+                                repository: widget.repository,
+                                accounts: accounts,
+                                entries: entries,
+                                selectedEntryId: _selectedSnapshotEntryId,
+                                onSelectEntry: (id) =>
+                                    setState(() => _selectedSnapshotEntryId = id),
+                              ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobile(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
       endDrawer: AppDrawer(

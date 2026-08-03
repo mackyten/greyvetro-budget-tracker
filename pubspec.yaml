@@ -83,6 +83,7 @@ flutter:
     - assets/branding/logo_mark.png
     - assets/branding/lockup_light.png
     - assets/branding/lockup_dark.png
+    - assets/branding/google_g.png
 
   fonts:
     - family: Manrope

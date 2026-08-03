@@ -59,12 +59,25 @@ class MonthDetailSheet extends StatefulWidget {
     required this.entry,
     required this.accounts,
     required this.previous,
+    this.embedded = false,
+    this.onClose,
   });
 
   final BudgetRepository repository;
   final MonthlyEntry entry;
   final List<Account> accounts;
   final MonthlyEntry? previous;
+
+  /// When true, renders as plain inline content (no drag handle, no
+  /// [DraggableScrollableSheet]) for the wide Snapshots split view's detail
+  /// column, instead of the mobile modal-bottom-sheet chrome. All editing
+  /// logic (drafts, voice input, cash counter, anomaly guard, lock) is
+  /// shared — only the outer shell differs.
+  final bool embedded;
+
+  /// Called instead of `Navigator.pop` for the close button when [embedded]
+  /// is true. Ignored otherwise.
+  final VoidCallback? onClose;
 
   @override
   State<MonthDetailSheet> createState() => _MonthDetailSheetState();
@@ -224,7 +237,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
       await updateHomeWidget(
         MonthSummary.compute(entry: entry, previous: widget.previous, accounts: widget.accounts),
       );
-      if (mounted) Navigator.of(context).pop();
+      // Embedded (wide Snapshots panel): stay open showing the just-saved
+      // entry, matching the verified design's `saveEntry()` — it only
+      // changes `screen`, never clears `activeEntryId`. There's no route to
+      // pop, either.
+      if (mounted && !widget.embedded) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -242,6 +259,8 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildEmbedded(context);
+
     final visibleAccounts = widget.accounts
         .where((a) => a.active || widget.entry.balances.containsKey(a.id))
         .toList()
@@ -412,6 +431,146 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
           );
         },
       ),
+    );
+  }
+
+  /// Wide Snapshots split view's inline detail panel: the same account rows,
+  /// note, and summary — as a single scrolling column with no pinned header
+  /// or summary bar, matching the verified design (its `wideDetailCol` has
+  /// `overflow-y:auto` on the whole column, header and summary included, not
+  /// a separate pinned region like the mobile sheet).
+  Widget _buildEmbedded(BuildContext context) {
+    final visibleAccounts = widget.accounts
+        .where((a) => a.active || widget.entry.balances.containsKey(a.id))
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+
+    final assets = visibleAccounts.where((a) => a.section == AccountSection.asset);
+    final reserved =
+        visibleAccounts.where((a) => a.section == AccountSection.reservedLiability);
+
+    final summary = MonthSummary.compute(
+      entry: _liveEntry,
+      previous: widget.previous,
+      accounts: widget.accounts,
+    );
+
+    final palette = context.palette;
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                monthFormat.format(widget.entry.month),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: uiFont,
+                  color: palette.heading,
+                ),
+              ),
+            ),
+            GhostIconButton(
+              icon: _locked ? Icons.lock : Icons.lock_open,
+              onPressed: _toggleLock,
+            ),
+            const SizedBox(width: 8),
+            GhostIconButton(
+              icon: Icons.close,
+              onPressed: () => widget.onClose?.call(),
+            ),
+            const SizedBox(width: 8),
+            SolidIconButton(icon: Icons.check, loading: _saving, onPressed: _save),
+          ],
+        ),
+        if (widget.previous != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Show previous month values',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: uiFont,
+                    color: palette.text,
+                  ),
+                ),
+                PillSwitch(
+                  value: _showPrevious,
+                  onChanged: (v) => setState(() => _showPrevious = v),
+                ),
+              ],
+            ),
+          ),
+        _SectionHeader('Assets'),
+        for (final a in assets)
+          _AccountRow(
+            account: a,
+            controller: _controllers[a.id]!,
+            locked: _locked,
+            previousBalance: widget.previous?.balances[a.id],
+            showPrevious: _showPrevious,
+          ),
+        _SectionHeader('Reserved & Liabilities'),
+        for (final a in reserved)
+          _AccountRow(
+            account: a,
+            controller: _controllers[a.id]!,
+            locked: _locked,
+            previousBalance: widget.previous?.balances[a.id],
+            showPrevious: _showPrevious,
+          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 6),
+          child: Text(
+            'NOTE',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+              fontFamily: uiFont,
+              color: AppPalette.blueDeep,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: TextField(
+            controller: _noteController,
+            readOnly: _locked,
+            maxLines: 2,
+            style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
+            decoration: InputDecoration(
+              hintText: 'Optional note about this month',
+              filled: true,
+              fillColor: palette.surfaceAlt,
+              contentPadding: const EdgeInsets.all(10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: palette.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: palette.border),
+              ),
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: palette.surfaceAlt,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: _SummaryLines(summary: summary),
+        ),
+      ],
     );
   }
 }
@@ -598,13 +757,6 @@ class _SummaryBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final delta = summary.currentMonthSaved;
-    final deltaColor = delta == null
-        ? palette.muted
-        : delta >= 0
-            ? AppPalette.ok
-            : AppPalette.error;
-
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -612,29 +764,51 @@ class _SummaryBar extends StatelessWidget {
         border: Border(top: BorderSide(color: palette.border)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, -6))],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _SummaryLine('Total Assets', currencyFormat.format(summary.totalAssets)),
+      child: _SummaryLines(summary: summary),
+    );
+  }
+}
+
+/// The summary figures themselves, shared by [_SummaryBar] (mobile, pinned
+/// to the bottom of the sheet) and the wide embedded panel's plain inline
+/// card (which just wraps this in a lighter, non-shadowed container).
+class _SummaryLines extends StatelessWidget {
+  const _SummaryLines({required this.summary});
+
+  final MonthSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final delta = summary.currentMonthSaved;
+    final deltaColor = delta == null
+        ? palette.muted
+        : delta >= 0
+            ? AppPalette.ok
+            : AppPalette.error;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SummaryLine('Total Assets', currencyFormat.format(summary.totalAssets)),
+        _SummaryLine(
+          'Reserved & Liabilities',
+          currencyFormat.format(summary.totalReservedLiabilities),
+        ),
+        Container(height: 1, color: palette.border, margin: const EdgeInsets.symmetric(vertical: 6)),
+        _SummaryLine(
+          'Net Savings',
+          currencyFormat.format(summary.netSavings),
+          bold: true,
+        ),
+        if (delta != null)
           _SummaryLine(
-            'Reserved & Liabilities',
-            currencyFormat.format(summary.totalReservedLiabilities),
+            'Current month saved',
+            formatSignedDelta(delta, summary.momChangePct),
+            color: deltaColor,
+            small: true,
           ),
-          Container(height: 1, color: palette.border, margin: const EdgeInsets.symmetric(vertical: 6)),
-          _SummaryLine(
-            'Net Savings',
-            currencyFormat.format(summary.netSavings),
-            bold: true,
-          ),
-          if (delta != null)
-            _SummaryLine(
-              'Current month saved',
-              formatSignedDelta(delta, summary.momChangePct),
-              color: deltaColor,
-              small: true,
-            ),
-        ],
-      ),
+      ],
     );
   }
 }

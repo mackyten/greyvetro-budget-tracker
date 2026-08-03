@@ -33,35 +33,35 @@ class NetWorthTrendsSection extends StatelessWidget {
     final summaries = computeMonthSummaries(entries: entries, accounts: accounts);
     return Column(
       children: [
-        _ChartCard(
+        ChartCard(
           title: 'Net worth over time',
-          child: _NetWorthTrendChart(summaries: summaries),
+          child: NetWorthTrendChart(summaries: summaries),
         ),
         _ProjectionBanner(summaries: summaries),
-        _ChartCard(
+        ChartCard(
           title: 'Assets vs. Reserved & Liabilities',
-          child: _AssetsVsLiabilitiesChart(summaries: summaries),
+          child: AssetsVsLiabilitiesChart(summaries: summaries),
         ),
-        _ChartCard(
+        ChartCard(
           title: 'Monthly saved amount',
-          child: _MonthlySavedChart(summaries: summaries),
+          child: MonthlySavedChart(summaries: summaries),
         ),
-        _ChartCard(
+        ChartCard(
           title: 'Latest balance breakdown',
-          child: _LatestBalanceBreakdownChart(accounts: accounts, summaries: summaries),
+          child: LatestBalanceBreakdownChart(accounts: accounts, summaries: summaries),
         ),
-        _ChartCard(
+        ChartCard(
           title: 'Assets breakdown',
-          child: _BalanceBreakdownPie(
+          child: BalanceBreakdownPie(
             accounts: accounts,
             summaries: summaries,
             section: AccountSection.asset,
             emptyMessage: 'No active asset balances yet.',
           ),
         ),
-        _ChartCard(
+        ChartCard(
           title: 'Reserved & Liabilities breakdown',
-          child: _BalanceBreakdownPie(
+          child: BalanceBreakdownPie(
             accounts: accounts,
             summaries: summaries,
             section: AccountSection.reservedLiability,
@@ -73,8 +73,8 @@ class NetWorthTrendsSection extends StatelessWidget {
   }
 }
 
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({required this.title, required this.child});
+class ChartCard extends StatelessWidget {
+  const ChartCard({super.key, required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -111,8 +111,8 @@ class _ChartCard extends StatelessWidget {
   }
 }
 
-class _EmptyChartMessage extends StatelessWidget {
-  const _EmptyChartMessage(this.message);
+class EmptyChartMessage extends StatelessWidget {
+  const EmptyChartMessage(this.message, {super.key});
 
   final String message;
 
@@ -129,8 +129,8 @@ class _EmptyChartMessage extends StatelessWidget {
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
+class LegendDot extends StatelessWidget {
+  const LegendDot({super.key, required this.color, required this.label});
 
   final Color color;
   final String label;
@@ -200,18 +200,18 @@ FlTitlesData _axisTitles(List<MonthSummary> summaries) {
 /// Net worth (Assets − Reserved & Liabilities) per month. Single series (no
 /// legend, card title names what's plotted) unless an inflation rate is set
 /// in Settings, in which case a second, inflation-adjusted line is layered
-/// on using the same two-series + [_LegendDot] pattern as
-/// [_AssetsVsLiabilitiesChart].
-class _NetWorthTrendChart extends StatefulWidget {
-  const _NetWorthTrendChart({required this.summaries});
+/// on using the same two-series + [LegendDot] pattern as
+/// [AssetsVsLiabilitiesChart].
+class NetWorthTrendChart extends StatefulWidget {
+  const NetWorthTrendChart({super.key, required this.summaries});
 
   final List<MonthSummary> summaries;
 
   @override
-  State<_NetWorthTrendChart> createState() => _NetWorthTrendChartState();
+  State<NetWorthTrendChart> createState() => _NetWorthTrendChartState();
 }
 
-class _NetWorthTrendChartState extends State<_NetWorthTrendChart> {
+class _NetWorthTrendChartState extends State<NetWorthTrendChart> {
   double _inflationRate = 0;
   bool _loaded = false;
 
@@ -234,7 +234,7 @@ class _NetWorthTrendChartState extends State<_NetWorthTrendChart> {
   Widget build(BuildContext context) {
     final summaries = widget.summaries;
     if (summaries.length < 2) {
-      return const _EmptyChartMessage('Track at least 2 months to see the net worth trend.');
+      return const EmptyChartMessage('Track at least 2 months to see the net worth trend.');
     }
     const primary = AppPalette.blueDeep;
     const realColor = AppPalette.colorblindOrange;
@@ -258,9 +258,9 @@ class _NetWorthTrendChartState extends State<_NetWorthTrendChart> {
         if (showReal) ...[
           Row(
             children: [
-              _LegendDot(color: primary, label: 'Net worth'),
+              LegendDot(color: primary, label: 'Net worth'),
               const SizedBox(width: 16),
-              _LegendDot(color: realColor, label: "Inflation-adjusted (today's pesos)"),
+              LegendDot(color: realColor, label: "Inflation-adjusted (today's pesos)"),
             ],
           ),
           const SizedBox(height: 12),
@@ -315,7 +315,7 @@ class _NetWorthTrendChartState extends State<_NetWorthTrendChart> {
   }
 }
 
-/// What-if projector (#8): a text banner reusing [_ChartCard]'s chrome, not
+/// What-if projector (#8): a text banner reusing [ChartCard]'s chrome, not
 /// its chart internals. Reuses the same target-amount preference as
 /// milestones (#10a) rather than a second, bespoke "target" concept — the
 /// nearest not-yet-reached target becomes the projection's target.
@@ -358,7 +358,7 @@ class _ProjectionBannerState extends State<_ProjectionBanner> {
     final textStyle = TextStyle(fontSize: 12.5, fontFamily: uiFont, color: palette.text);
 
     if (projection == null) {
-      return _ChartCard(
+      return ChartCard(
         title: 'Projection',
         child: Text(
           "You're not currently saving on average, based on recent months — no projection to show.",
@@ -376,22 +376,22 @@ class _ProjectionBannerState extends State<_ProjectionBanner> {
             "per month, you'll reach ${currencyFormat.format(target)} in about "
             '$monthsToTarget month${monthsToTarget == 1 ? '' : 's'}.';
 
-    return _ChartCard(title: 'Projection', child: Text(text, style: textStyle));
+    return ChartCard(title: 'Projection', child: Text(text, style: textStyle));
   }
 }
 
 /// Two named series on one shared amount axis (never a second, independent
 /// y-scale) — a true identity comparison, so it gets the fixed validated
 /// categorical pair plus a legend.
-class _AssetsVsLiabilitiesChart extends StatelessWidget {
-  const _AssetsVsLiabilitiesChart({required this.summaries});
+class AssetsVsLiabilitiesChart extends StatelessWidget {
+  const AssetsVsLiabilitiesChart({super.key, required this.summaries});
 
   final List<MonthSummary> summaries;
 
   @override
   Widget build(BuildContext context) {
     if (summaries.length < 2) {
-      return const _EmptyChartMessage('Track at least 2 months to compare assets and liabilities.');
+      return const EmptyChartMessage('Track at least 2 months to compare assets and liabilities.');
     }
     const assetColor = AppPalette.colorblindBlue;
     const liabilityColor = AppPalette.colorblindOrange;
@@ -410,9 +410,9 @@ class _AssetsVsLiabilitiesChart extends StatelessWidget {
       children: [
         Row(
           children: [
-            _LegendDot(color: assetColor, label: 'Assets'),
+            LegendDot(color: assetColor, label: 'Assets'),
             const SizedBox(width: 16),
-            _LegendDot(color: liabilityColor, label: 'Reserved & Liabilities'),
+            LegendDot(color: liabilityColor, label: 'Reserved & Liabilities'),
           ],
         ),
         const SizedBox(height: 12),
@@ -455,8 +455,8 @@ class _AssetsVsLiabilitiesChart extends StatelessWidget {
 /// primary, colorblind-safe encoding of sign; green/red reinforces it and
 /// matches the convention already used for this exact figure in
 /// MonthDetailScreen's summary bar and MonthRowTile's month tiles.
-class _MonthlySavedChart extends StatelessWidget {
-  const _MonthlySavedChart({required this.summaries});
+class MonthlySavedChart extends StatelessWidget {
+  const MonthlySavedChart({super.key, required this.summaries});
 
   final List<MonthSummary> summaries;
 
@@ -467,7 +467,7 @@ class _MonthlySavedChart extends StatelessWidget {
         if (summaries[i].currentMonthSaved != null) (i, summaries[i].currentMonthSaved!),
     ];
     if (points.isEmpty) {
-      return const _EmptyChartMessage('Add another month to see monthly savings.');
+      return const EmptyChartMessage('Add another month to see monthly savings.');
     }
     final gridColor = Theme.of(context).colorScheme.outlineVariant;
 
@@ -506,8 +506,8 @@ class _MonthlySavedChart extends StatelessWidget {
 /// donut (a pie past ~7 slices with close values is unreadable). One hue
 /// (the app's brand color) since this is a magnitude job, not identity;
 /// sorting by size does the "ordering" work a rainbow would otherwise fake.
-class _LatestBalanceBreakdownChart extends StatelessWidget {
-  const _LatestBalanceBreakdownChart({required this.accounts, required this.summaries});
+class LatestBalanceBreakdownChart extends StatelessWidget {
+  const LatestBalanceBreakdownChart({super.key, required this.accounts, required this.summaries});
 
   final List<Account> accounts;
   final List<MonthSummary> summaries;
@@ -515,7 +515,7 @@ class _LatestBalanceBreakdownChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (summaries.isEmpty) {
-      return const _EmptyChartMessage('No balance data for the latest month.');
+      return const EmptyChartMessage('No balance data for the latest month.');
     }
     final latestEntry = summaries.last.entry;
     final rows = accounts
@@ -528,7 +528,7 @@ class _LatestBalanceBreakdownChart extends StatelessWidget {
       ..sort((a, b) => b.$2.compareTo(a.$2));
 
     if (rows.isEmpty) {
-      return const _EmptyChartMessage('No balance data for the latest month.');
+      return const EmptyChartMessage('No balance data for the latest month.');
     }
 
     final maxValue = rows.first.$2;
@@ -582,12 +582,13 @@ class _LatestBalanceBreakdownChart extends StatelessWidget {
 }
 
 /// Donut + legend for the latest month's active, positive-balance accounts
-/// within one [section] — same filter/sort as [_LatestBalanceBreakdownChart],
+/// within one [section] — same filter/sort as [LatestBalanceBreakdownChart],
 /// rendered as identity/proportion (a handful of slices) rather than
 /// magnitude-across-many-rows. Colors cycle through the same 6-color
 /// sequence the design's `PIE_COLORS` array uses.
-class _BalanceBreakdownPie extends StatelessWidget {
-  const _BalanceBreakdownPie({
+class BalanceBreakdownPie extends StatelessWidget {
+  const BalanceBreakdownPie({
+    super.key,
     required this.accounts,
     required this.summaries,
     required this.section,
@@ -611,7 +612,7 @@ class _BalanceBreakdownPie extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (summaries.isEmpty) {
-      return _EmptyChartMessage(emptyMessage);
+      return EmptyChartMessage(emptyMessage);
     }
     final latestEntry = summaries.last.entry;
     final rows = accounts
@@ -621,7 +622,7 @@ class _BalanceBreakdownPie extends StatelessWidget {
       ..sort((a, b) => b.$2.compareTo(a.$2));
 
     if (rows.isEmpty) {
-      return _EmptyChartMessage(emptyMessage);
+      return EmptyChartMessage(emptyMessage);
     }
 
     final total = rows.fold<double>(0, (sum, r) => sum + r.$2);
