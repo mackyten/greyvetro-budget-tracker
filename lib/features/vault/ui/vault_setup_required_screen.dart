@@ -4,6 +4,7 @@ import '../../../core/adaptive_route.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/pin_lock/create_pin_screen.dart';
 import '../../../core/pin_lock/pin_store.dart';
+import '../../net_worth/ui/ghost_icon_button.dart';
 import '../data/vault_store.dart';
 import 'vault_home_screen.dart';
 
@@ -31,52 +32,77 @@ class VaultSetupRequiredScreen extends StatelessWidget {
     final palette = context.palette;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.shield_outlined, size: 48, color: palette.muted),
-              const SizedBox(height: 16),
-              Text(
-                'Set up a PIN to use the Vault',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: uiFont,
-                  color: palette.heading,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: GhostIconButton(
+                  icon: Icons.arrow_back,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'The Secure Vault stores sensitive details like card numbers '
-                'locally on this device. A PIN is required before it can be '
-                'opened at all.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontFamily: uiFont,
-                  color: palette.muted,
-                ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => _setUpPin(context),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.blueDeep,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
+            ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shield_outlined,
+                          size: 48,
+                          color: palette.muted,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Set up a PIN to use the Vault',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: uiFont,
+                            color: palette.heading,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'The Secure Vault stores sensitive details like card numbers '
+                          'locally on this device. A PIN is required before it can be '
+                          'opened at all.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontFamily: uiFont,
+                            color: palette.muted,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: () => _setUpPin(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppPalette.blueDeep,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Set up PIN'),
+                        ),
+                      ],
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
-                child: const Text('Set up PIN'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

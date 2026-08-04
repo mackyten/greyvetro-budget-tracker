@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/design_tokens.dart';
+import '../../../core/responsive.dart';
 import '../../net_worth/ui/design_chip.dart';
 import '../../net_worth/ui/ghost_icon_button.dart';
 import '../../net_worth/ui/gradient_fab.dart';
@@ -59,64 +60,95 @@ class _VaultHomeScreenState extends State<VaultHomeScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-              child: Row(
-                children: [
-                  DesignChip(
-                    label: 'All',
-                    active: _filter == null,
-                    onTap: () => setState(() => _filter = null),
-                  ),
-                  const SizedBox(width: 8),
-                  DesignChip(
-                    label: 'Bank / Card',
-                    active: _filter == VaultItemKind.bankCard,
-                    onTap: () => setState(() => _filter = VaultItemKind.bankCard),
-                  ),
-                  const SizedBox(width: 8),
-                  DesignChip(
-                    label: 'Note',
-                    active: _filter == VaultItemKind.note,
-                    onTap: () => setState(() => _filter = VaultItemKind.note),
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child: ValueListenableBuilder<List<VaultItem>>(
-                valueListenable: VaultStore.instance.items,
-                builder: (context, items, _) {
-                  final filtered = _filter == null
-                      ? List<VaultItem>.from(items)
-                      : items.where((i) => i.kind == _filter).toList();
-                  filtered.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-
-                  if (filtered.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No vault items yet. Tap + to add one.',
-                        style: TextStyle(fontFamily: uiFont, color: palette.muted),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: context.isWideLayout
+                        ? kWideNarrowMaxWidth
+                        : double.infinity,
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                        child: Row(
+                          children: [
+                            DesignChip(
+                              label: 'All',
+                              active: _filter == null,
+                              onTap: () => setState(() => _filter = null),
+                            ),
+                            const SizedBox(width: 8),
+                            DesignChip(
+                              label: 'Bank / Card',
+                              active: _filter == VaultItemKind.bankCard,
+                              onTap: () => setState(
+                                () => _filter = VaultItemKind.bankCard,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            DesignChip(
+                              label: 'Note',
+                              active: _filter == VaultItemKind.note,
+                              onTap: () =>
+                                  setState(() => _filter = VaultItemKind.note),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  }
+                      Expanded(
+                        child: ValueListenableBuilder<List<VaultItem>>(
+                          valueListenable: VaultStore.instance.items,
+                          builder: (context, items, _) {
+                            final filtered = _filter == null
+                                ? List<VaultItem>.from(items)
+                                : items
+                                      .where((i) => i.kind == _filter)
+                                      .toList();
+                            filtered.sort(
+                              (a, b) => b.updatedAt.compareTo(a.updatedAt),
+                            );
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 96),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) => _VaultItemTile(
-                      item: filtered[index],
-                      accounts: widget.accounts,
-                    ),
-                  );
-                },
+                            if (filtered.isEmpty) {
+                              return Center(
+                                child: Text(
+                                  'No vault items yet. Tap + to add one.',
+                                  style: TextStyle(
+                                    fontFamily: uiFont,
+                                    color: palette.muted,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(
+                                18,
+                                14,
+                                18,
+                                96,
+                              ),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) => _VaultItemTile(
+                                item: filtered[index],
+                                accounts: widget.accounts,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
       floatingActionButton: GradientFab(
-        onPressed: () => showVaultItemEditorSheet(context, accounts: widget.accounts),
+        onPressed: () =>
+            showVaultItemEditorSheet(context, accounts: widget.accounts),
       ),
     );
   }
@@ -142,7 +174,9 @@ class _VaultItemTile extends StatelessWidget {
       final parts = <String>[];
       final cardNumber = item.cardNumber;
       if (cardNumber != null && cardNumber.isNotEmpty) {
-        final last4 = cardNumber.length > 4 ? cardNumber.substring(cardNumber.length - 4) : cardNumber;
+        final last4 = cardNumber.length > 4
+            ? cardNumber.substring(cardNumber.length - 4)
+            : cardNumber;
         parts.add('•••• $last4');
       }
       if (item.cardholderName != null && item.cardholderName!.isNotEmpty) {
@@ -173,7 +207,11 @@ class _VaultItemTile extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => showVaultItemEditorSheet(context, existing: item, accounts: accounts),
+          onTap: () => showVaultItemEditorSheet(
+            context,
+            existing: item,
+            accounts: accounts,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             child: Row(
@@ -208,7 +246,11 @@ class _VaultItemTile extends StatelessWidget {
                         _subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: uiFont,
+                          color: palette.muted,
+                        ),
                       ),
                     ],
                   ),

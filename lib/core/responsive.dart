@@ -12,10 +12,6 @@ const double kWideBreakpoint = 680;
 /// keeping the same "left-aligned capped column, not edge-to-edge" intent.
 const double kWideNarrowMaxWidth = 640;
 
-/// Max width for the two-card Assets/Reserved grid in the wide Accounts
-/// section — matches the verified design's `wideAccountsGrid` exactly.
-const double kWideAccountsMaxWidth = 900;
-
 extension ResponsiveContext on BuildContext {
   bool get isWideLayout => MediaQuery.sizeOf(this).width >= kWideBreakpoint;
 }

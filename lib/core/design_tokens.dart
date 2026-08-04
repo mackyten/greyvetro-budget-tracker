@@ -49,14 +49,19 @@ class AppPalette extends ThemeExtension<AppPalette> {
     muted: Color(0xFF8A93A0),
   );
 
+  // User-requested dark palette (2026-08-04), replacing the artifact-sourced
+  // greys with this violet-navy family: bg/surface/surfaceAlt/border map
+  // directly onto the four supplied swatches (darkest to lightest); text/
+  // heading/muted are lighter tints in the same ~245° hue extending that
+  // ramp, since the source palette itself stopped at border.
   static const dark = AppPalette(
-    bg: Color(0xFF12151A),
-    surface: Color(0xFF1A1F26),
-    surfaceAlt: Color(0xFF222834),
-    border: Color(0xFF2C3440),
-    text: Color(0xFFA9B2BF),
-    heading: Color(0xFFE8ECF1),
-    muted: Color(0xFF6B7482),
+    bg: Color(0xFF121420),
+    surface: Color(0xFF1B2432),
+    surfaceAlt: Color(0xFF2C2B3C),
+    border: Color(0xFF403F4C),
+    text: Color(0xFFACAABE),
+    heading: Color(0xFFEDECF3),
+    muted: Color(0xFF6E6C82),
   );
 
   @override

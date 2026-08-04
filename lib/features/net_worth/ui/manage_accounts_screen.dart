@@ -145,46 +145,39 @@ class ManageAccountsScreen extends StatelessWidget {
         const SizedBox(height: 20),
         Expanded(
           child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: kWideAccountsMaxWidth,
-              ),
-              child: StreamBuilder<List<Account>>(
-                stream: repository.watchAccounts(),
-                builder: (context, snap) {
-                  if (!snap.hasData) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final accounts = List<Account>.from(snap.data!)
-                    ..sort((a, b) => a.order.compareTo(b.order));
-                  final assets = accounts
-                      .where((a) => a.section == AccountSection.asset)
-                      .toList();
-                  final reserved = accounts
-                      .where(
-                        (a) => a.section == AccountSection.reservedLiability,
-                      )
-                      .toList();
-                  return AutoFitGrid(
-                    minItemWidth: 340,
-                    children: [
-                      _WideAccountsCard(
-                        title: 'Assets',
-                        accounts: assets,
-                        repository: repository,
-                      ),
-                      _WideAccountsCard(
-                        title: 'Reserved & Liabilities',
-                        accounts: reserved,
-                        repository: repository,
-                      ),
-                    ],
+            child: StreamBuilder<List<Account>>(
+              stream: repository.watchAccounts(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator()),
                   );
-                },
-              ),
+                }
+                final accounts = List<Account>.from(snap.data!)
+                  ..sort((a, b) => a.order.compareTo(b.order));
+                final assets = accounts
+                    .where((a) => a.section == AccountSection.asset)
+                    .toList();
+                final reserved = accounts
+                    .where((a) => a.section == AccountSection.reservedLiability)
+                    .toList();
+                return AutoFitGrid(
+                  minItemWidth: 340,
+                  children: [
+                    _WideAccountsCard(
+                      title: 'Assets',
+                      accounts: assets,
+                      repository: repository,
+                    ),
+                    _WideAccountsCard(
+                      title: 'Reserved & Liabilities',
+                      accounts: reserved,
+                      repository: repository,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
