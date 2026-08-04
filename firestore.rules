@@ -7,10 +7,97 @@ rules_version = '2';
 // Auth users (via a minted custom token instead of Google), so
 // `request.auth.uid` and these rules don't need to change — only the sign-in
 // flow does.
+//
+// Hardening (security audit tier 2): the original recursive wildcard
+// (`users/{uid}/{document=**}`) let a signed-in user write arbitrary
+// fields/types/sizes anywhere under their own subtree. These explicit
+// matches keep the exact same ownership check but additionally pin the
+// document shapes to what the app actually writes — the schema below is
+// derived from Account.toMap() and MonthlyEntry.toMap() (see
+// lib/features/net_worth/models/) and FirestoreBudgetRepository's write
+// calls. Anything outside these two collections is now denied by default.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Shape check shared by account create and update. On update,
+    // request.resource.data is the POST-merge document (existing fields +
+    // the patch), so every field is checked "if present" rather than
+    // required: docs written before `active`/`cashCounter` existed
+    // (Account.fromMap defaults both) must stay updatable via the partial
+    // `update({'active': ...})` that setAccountActive performs. Only
+    // `create` additionally requires the full key set (see below), which
+    // Account.toMap() always writes.
+    //
+    // `order` is checked as number, not int: Account.fromMap reads it via
+    // `as num`, i.e. the app tolerates a stored 3.0, and rejecting one here
+    // would permanently lock that doc out of partial updates. A float order
+    // is harmless; a string/map one is still rejected.
+    function accountShapeOk(data) {
+      return data.keys().hasOnly(['name', 'section', 'reservedKind', 'order', 'active', 'cashCounter'])
+        && (!('name' in data) || (data.name is string && data.name.size() >= 1 && data.name.size() <= 200))
+        && (!('section' in data) || data.section in ['asset', 'reservedLiability'])
+        && (!('reservedKind' in data) || data.reservedKind == null || data.reservedKind in ['reserved', 'creditCard'])
+        && (!('order' in data) || (data.order is number && data.order >= 0 && data.order < 1000000))
+        && (!('active' in data) || data.active is bool)
+        && (!('cashCounter' in data) || data.cashCounter is bool);
+    }
+
+    // Shape check shared by monthly-entry create and update (saveMonthlyEntry
+    // does a full `set`, so update = full replace here, but the "if present"
+    // form keeps any future partial update working too).
+    //
+    // Known limitation, stated openly: the rules language has no loops, so
+    // the *values* inside the `balances` map (arbitrary account-id keys →
+    // numbers) cannot be individually type- or magnitude-checked server
+    // side. What we can pin: it must be a map, and its entry count is
+    // capped so it can't be abused as a bulk blob store. Value sanity
+    // (numeric, |x| < 1e12) remains enforced client-side by the typed
+    // Map<String, double> in MonthlyEntry plus the editor's parsing.
+    function monthlyEntryShapeOk(data) {
+      return data.keys().hasOnly(['balances', 'note', 'locked'])
+        && (!('balances' in data) || (data.balances is map && data.balances.size() <= 500))
+        && (!('note' in data) || data.note == null || (data.note is string && data.note.size() <= 2000))
+        && (!('locked' in data) || data.locked is bool);
+    }
+
+    match /users/{uid} {
+      // The parent doc carries no fields — it exists only as the anchor for
+      // the two subcollections and is deleted at the end of
+      // FirestoreBudgetRepository.deleteAllData(). Nothing in the app ever
+      // creates or updates it, so those ops are simply not granted: a
+      // compromised session can't stash arbitrary data on it.
+      allow read, delete: if isOwner(uid);
+
+      match /accounts/{accountId} {
+        allow read, delete: if isOwner(uid);
+        // create must carry the complete key set Account.toMap() writes
+        // (reservedKind is always present, possibly null); update tolerates
+        // legacy docs that predate newer fields (see accountShapeOk).
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasAll(['name', 'section', 'reservedKind', 'order', 'active', 'cashCounter'])
+          && accountShapeOk(request.resource.data);
+        allow update: if isOwner(uid) && accountShapeOk(request.resource.data);
+      }
+
+      match /monthlyEntries/{entryId} {
+        allow read, delete: if isOwner(uid);
+        // Doc ids are always MonthlyEntry.id — zero-padded YYYY-MM. The id
+        // check is safe to apply on update too (not just create): any doc
+        // whose id didn't parse as YYYY-MM would already crash
+        // MonthlyEntry.fromMap on read, so no readable legacy doc can be
+        // locked out by it, and `delete` stays open for cleanup regardless.
+        allow create: if isOwner(uid)
+          && entryId.matches('^[0-9]{4}-[0-9]{2}$')
+          && request.resource.data.keys().hasAll(['balances', 'note', 'locked'])
+          && monthlyEntryShapeOk(request.resource.data);
+        allow update: if isOwner(uid)
+          && entryId.matches('^[0-9]{4}-[0-9]{2}$')
+          && monthlyEntryShapeOk(request.resource.data);
+      }
     }
   }
 }
