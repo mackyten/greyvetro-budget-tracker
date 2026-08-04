@@ -18,6 +18,7 @@ class PinKeypad extends StatelessWidget {
     required this.onBackspace,
     this.onCancel,
     this.onBiometricTap,
+    this.enabled = true,
   });
 
   final String title;
@@ -33,6 +34,12 @@ class PinKeypad extends StatelessWidget {
   /// bottom-left slot — pressing it tries biometric auth instead of PIN
   /// digits.
   final VoidCallback? onBiometricTap;
+
+  /// False while a failed-attempt lockout is active: digit and backspace
+  /// buttons dim and stop responding. The biometric shortcut deliberately
+  /// stays live — lockout throttles PIN *guessing*, and biometrics aren't a
+  /// guessable channel.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +71,10 @@ class PinKeypad extends StatelessWidget {
                                 alignment: Alignment.topRight,
                                 child: Padding(
                                   padding: const EdgeInsets.all(12),
-                                  child: GhostIconButton(icon: Icons.close, onPressed: onCancel!),
+                                  child: GhostIconButton(
+                                    icon: Icons.close,
+                                    onPressed: onCancel!,
+                                  ),
                                 ),
                               )
                             : null,
@@ -74,7 +84,11 @@ class PinKeypad extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Image.asset('assets/branding/logo_mark.png', width: 52, height: 52),
+                              Image.asset(
+                                'assets/branding/logo_mark.png',
+                                width: 52,
+                                height: 52,
+                              ),
                               const SizedBox(height: 14),
                               Text(
                                 title,
@@ -105,10 +119,14 @@ class PinKeypad extends StatelessWidget {
                                 children: [
                                   for (var i = 0; i < pinLength; i++)
                                     AnimatedContainer(
-                                      duration: const Duration(milliseconds: 120),
+                                      duration: const Duration(
+                                        milliseconds: 120,
+                                      ),
                                       width: 16,
                                       height: 16,
-                                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: i < enteredLength
@@ -148,6 +166,7 @@ class PinKeypad extends StatelessWidget {
                         onDigit: onDigit,
                         onBackspace: onBackspace,
                         onBiometricTap: onBiometricTap,
+                        enabled: enabled,
                       ),
                       const SizedBox(height: 28),
                     ],
@@ -163,11 +182,17 @@ class PinKeypad extends StatelessWidget {
 }
 
 class _NumericPad extends StatelessWidget {
-  const _NumericPad({required this.onDigit, required this.onBackspace, this.onBiometricTap});
+  const _NumericPad({
+    required this.onDigit,
+    required this.onBackspace,
+    this.onBiometricTap,
+    this.enabled = true,
+  });
 
   final ValueChanged<String> onDigit;
   final VoidCallback onBackspace;
   final VoidCallback? onBiometricTap;
+  final bool enabled;
 
   static const _rows = [
     ['1', '2', '3'],
@@ -185,7 +210,13 @@ class _NumericPad extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [for (final d in row) _PadButton(label: d, onTap: () => onDigit(d))],
+              children: [
+                for (final d in row)
+                  _PadButton(
+                    label: d,
+                    onTap: enabled ? () => onDigit(d) : null,
+                  ),
+              ],
             ),
           ),
         Padding(
@@ -196,10 +227,13 @@ class _NumericPad extends StatelessWidget {
               onBiometricTap != null
                   ? _PadButton(icon: Icons.fingerprint, onTap: onBiometricTap!)
                   : const SizedBox(width: 72, height: 72),
-              _PadButton(label: '0', onTap: () => onDigit('0')),
+              _PadButton(
+                label: '0',
+                onTap: enabled ? () => onDigit('0') : null,
+              ),
               _PadButton(
                 icon: Icons.backspace_outlined,
-                onTap: onBackspace,
+                onTap: enabled ? onBackspace : null,
               ),
             ],
           ),
@@ -214,34 +248,39 @@ class _PadButton extends StatelessWidget {
 
   final String? label;
   final IconData? icon;
-  final VoidCallback onTap;
+
+  /// Null renders the button dimmed and inert (lockout state).
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: SizedBox(
-        width: 72,
-        height: 72,
-        child: Material(
-          color: palette.surfaceAlt,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: Center(
-              child: label != null
-                  ? Text(
-                      label!,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: uiFont,
-                        color: palette.heading,
-                      ),
-                    )
-                  : Icon(icon, size: 22, color: palette.heading),
+      child: Opacity(
+        opacity: onTap == null ? 0.35 : 1,
+        child: SizedBox(
+          width: 72,
+          height: 72,
+          child: Material(
+            color: palette.surfaceAlt,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: Center(
+                child: label != null
+                    ? Text(
+                        label!,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: uiFont,
+                          color: palette.heading,
+                        ),
+                      )
+                    : Icon(icon, size: 22, color: palette.heading),
+              ),
             ),
           ),
         ),
