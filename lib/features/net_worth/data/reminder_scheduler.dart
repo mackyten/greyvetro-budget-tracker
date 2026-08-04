@@ -46,8 +46,12 @@ class ReminderScheduler {
           ?.requestNotificationsPermission();
       _initialized = true;
     } catch (error, stackTrace) {
-      debugPrint('ReminderScheduler.init failed, continuing without reminders: $error');
-      if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
+      // debugPrint is throttled, not stripped, in release builds — guard it
+      // like every other log site so release logcat stays silent.
+      if (kDebugMode) {
+        debugPrint('ReminderScheduler.init failed, continuing without reminders: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
   }
 

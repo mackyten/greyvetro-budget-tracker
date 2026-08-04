@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
@@ -32,13 +33,16 @@ class _SignInScreenState extends State<SignInScreen> {
       await widget.authService.signIn();
       // AuthGate rebuilds from authStateChanges(); nothing else to do here.
     } on AuthException catch (e) {
-      debugPrint('Sign-in failed: $e');
+      // kDebugMode guard: auth failure details (which can include account
+      // hints) have no business in release logcat, where any app on the
+      // device used to be able to read them and adb still can.
+      if (kDebugMode) debugPrint('Sign-in failed: $e');
       if (!mounted) return;
       // A user-initiated cancel (closed the account picker) isn't a failure
       // worth alarming them with.
       if (!e.cancelled) setState(() => _error = e.message);
     } catch (e, stackTrace) {
-      debugPrint('Sign-in failed: $e\n$stackTrace');
+      if (kDebugMode) debugPrint('Sign-in failed: $e\n$stackTrace');
       if (!mounted) return;
       setState(() => _error = "Couldn't sign in. Please try again.");
     } finally {

@@ -40,22 +40,28 @@ Future<void> activateAppCheck() async {
   try {
     if (kIsWeb) {
       if (appCheckRecaptchaV3SiteKey.isEmpty) {
-        debugPrint('App Check: no reCAPTCHA site key set, skipping web activation.');
+        if (kDebugMode) {
+          debugPrint('App Check: no reCAPTCHA site key set, skipping web activation.');
+        }
         return;
       }
       await FirebaseAppCheck.instance.activate(
-        webProvider: ReCaptchaV3Provider(appCheckRecaptchaV3SiteKey),
+        providerWeb: ReCaptchaV3Provider(appCheckRecaptchaV3SiteKey),
       );
       return;
     }
     await FirebaseAppCheck.instance.activate(
-      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-      appleProvider: kDebugMode
-          ? AppleProvider.debug
-          : AppleProvider.appAttestWithDeviceCheckFallback,
+      providerAndroid: kDebugMode
+          ? const AndroidDebugProvider()
+          : const AndroidPlayIntegrityProvider(),
+      providerApple: kDebugMode
+          ? const AppleDebugProvider()
+          : const AppleAppAttestWithDeviceCheckFallbackProvider(),
     );
   } catch (error, stackTrace) {
-    debugPrint('App Check activation failed, continuing without it: $error');
-    if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
+    if (kDebugMode) {
+      debugPrint('App Check activation failed, continuing without it: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 }
