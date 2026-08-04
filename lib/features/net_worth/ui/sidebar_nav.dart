@@ -64,63 +64,80 @@ class SidebarNav extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _SidebarBrand(repository: repository),
-              const SizedBox(height: 8),
-              _SidebarItem(
-                icon: Icons.home_outlined,
-                label: 'Dashboard',
-                active: selectedSection == WideSection.dashboard,
-                onTap: onSelectDashboard,
-              ),
-              _SidebarItem(
-                icon: Icons.account_balance_outlined,
-                label: 'Accounts',
-                active: selectedSection == WideSection.accounts,
-                onTap: onSelectAccounts,
-              ),
-              _SidebarItem(
-                icon: Icons.dashboard_outlined,
-                label: 'Snapshots',
-                active: selectedSection == WideSection.snapshots,
-                onTap: onSelectSnapshots,
-              ),
-              const SizedBox(height: 8),
-              Container(height: 1, color: palette.border),
-              const SizedBox(height: 8),
-              _SidebarItem(
-                icon: Icons.settings_outlined,
-                label: 'Settings',
-                active: selectedSection == WideSection.settings,
-                onTap: onSelectSettings,
-              ),
-              _SidebarItem(
-                icon: Icons.shield_outlined,
-                label: 'Secure Vault',
-                active: false,
-                onTap: () async {
-                  final accounts = await repository.watchAccounts().first;
-                  if (!context.mounted) return;
-                  openVault(
-                    context,
-                    accounts: [
-                      for (final a in accounts) (id: a.id, name: a.name),
+              // The nav block scrolls when the window is shorter than the
+              // fixed item stack (small desktop windows, 600px test
+              // surfaces) instead of overflowing. On normal heights the
+              // content is shorter than the available space, so this is
+              // visually identical to the old Spacer layout: the
+              // appearance + sign-out footer stays pinned to the bottom.
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SidebarBrand(repository: repository),
+                      const SizedBox(height: 8),
+                      _SidebarItem(
+                        icon: Icons.home_outlined,
+                        label: 'Dashboard',
+                        active: selectedSection == WideSection.dashboard,
+                        onTap: onSelectDashboard,
+                      ),
+                      _SidebarItem(
+                        icon: Icons.account_balance_outlined,
+                        label: 'Accounts',
+                        active: selectedSection == WideSection.accounts,
+                        onTap: onSelectAccounts,
+                      ),
+                      _SidebarItem(
+                        icon: Icons.dashboard_outlined,
+                        label: 'Snapshots',
+                        active: selectedSection == WideSection.snapshots,
+                        onTap: onSelectSnapshots,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(height: 1, color: palette.border),
+                      const SizedBox(height: 8),
+                      _SidebarItem(
+                        icon: Icons.settings_outlined,
+                        label: 'Settings',
+                        active: selectedSection == WideSection.settings,
+                        onTap: onSelectSettings,
+                      ),
+                      _SidebarItem(
+                        icon: Icons.shield_outlined,
+                        label: 'Secure Vault',
+                        active: false,
+                        onTap: () async {
+                          final accounts = await repository
+                              .watchAccounts()
+                              .first;
+                          if (!context.mounted) return;
+                          openVault(
+                            context,
+                            accounts: [
+                              for (final a in accounts)
+                                (id: a.id, name: a.name),
+                            ],
+                          );
+                        },
+                      ),
+                      _SidebarItem(
+                        icon: Icons.file_download_outlined,
+                        label: 'Export / Backup',
+                        active: selectedSection == WideSection.export,
+                        onTap: onSelectExport,
+                      ),
+                      _SidebarItem(
+                        icon: Icons.help_outline,
+                        label: 'Help / About',
+                        active: selectedSection == WideSection.help,
+                        onTap: onSelectHelp,
+                      ),
                     ],
-                  );
-                },
+                  ),
+                ),
               ),
-              _SidebarItem(
-                icon: Icons.file_download_outlined,
-                label: 'Export / Backup',
-                active: selectedSection == WideSection.export,
-                onTap: onSelectExport,
-              ),
-              _SidebarItem(
-                icon: Icons.help_outline,
-                label: 'Help / About',
-                active: selectedSection == WideSection.help,
-                onTap: onSelectHelp,
-              ),
-              const Spacer(),
               Container(height: 1, color: palette.border),
               const SizedBox(height: 12),
               Text(

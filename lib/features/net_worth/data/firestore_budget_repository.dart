@@ -11,9 +11,8 @@ import 'budget_repository.dart';
 ///   users/{uid}/accounts/{accountId}       -> Account.toMap()
 ///   users/{uid}/monthlyEntries/{YYYY-MM}   -> MonthlyEntry.toMap()
 class FirestoreBudgetRepository implements BudgetRepository {
-  FirestoreBudgetRepository({required String uid, FirebaseFirestore? firestore})
-      : _uid = uid,
-        _db = firestore ?? FirebaseFirestore.instance;
+  FirestoreBudgetRepository({required this._uid, FirebaseFirestore? firestore})
+      : _db = firestore ?? FirebaseFirestore.instance;
 
   final String _uid;
   final FirebaseFirestore _db;

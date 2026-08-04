@@ -127,6 +127,14 @@ void main() {
   });
 
   testWidgets('Home screen renders with no data', (tester) async {
+    // The default 800x600 test surface is wider than kWideBreakpoint (680),
+    // so it would render the persistent-sidebar wide layout added later.
+    // This test was written against the mobile shell (app bar copy, end
+    // drawer) — pin a phone-sized surface so it keeps testing that.
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(
       BudgetTrackerApp(
         authService: _FakeAuthService(),

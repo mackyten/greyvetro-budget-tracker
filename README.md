@@ -113,3 +113,30 @@ implementation and pointing `main.dart` at it. Not started yet — tracked in
 
 - `lib/firebase_options.dart` is a placeholder; run `flutterfire configure`
   before shipping to a real device/project.
+
+## Firebase App Check
+
+App Check is activated at startup (`lib/core/app_check_setup.dart`): Play
+Integrity on Android, App Attest (DeviceCheck fallback) on macOS, and the
+debug provider automatically in debug builds. Web activation is skipped
+until a reCAPTCHA v3 site key is pasted into `appCheckRecaptchaV3SiteKey`.
+
+Console steps that cannot be done from the repo:
+
+1. Firebase console → **App Check → Apps**: register the Android app with
+   the **Play Integrity** provider and the macOS app with **App Attest**.
+2. Run a debug build on each dev machine/device; the debug provider prints
+   a token to the log on first run. Register each one under **App Check →
+   Apps → ⋮ → Manage debug tokens**.
+3. For web (when needed): create a **reCAPTCHA v3** key for the app's
+   domain, register the web app in App Check with it, and paste the site
+   key into `appCheckRecaptchaV3SiteKey` (it is a public identifier — safe
+   to commit).
+4. macOS release builds using App Attest need the App Attest entitlement
+   (`com.apple.developer.devicecheck.appattest-environment`) and an Apple
+   Developer team; until then the DeviceCheck fallback covers it.
+5. **Leave enforcement OFF (monitor-only) for now.** Under **App Check →
+   APIs → Cloud Firestore**, watch the metrics until a released version of
+   the app has shipped with App Check active and verified-request volume
+   looks right — only then click Enforce. Enforcing early would cut off
+   every installed copy of the app that predates App Check.

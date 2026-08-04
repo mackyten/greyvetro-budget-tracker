@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'core/app_check_setup.dart';
 import 'core/auth/app_user.dart';
 import 'core/auth/auth_gate.dart';
 import 'core/auth/auth_service.dart';
@@ -17,6 +18,7 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await activateAppCheck();
   await ReminderScheduler.instance.init();
 
   final authService = FirebaseGoogleAuthService();
