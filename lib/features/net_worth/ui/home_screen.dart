@@ -15,12 +15,15 @@ import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'app_drawer.dart';
+import 'export_screen.dart';
 import 'ghost_icon_button.dart';
 import 'manage_accounts_screen.dart';
 import 'milestone_celebration_dialog.dart';
 import 'month_detail_screen.dart';
 import 'month_row_tile.dart';
 import 'net_worth_trends_section.dart';
+import 'placeholder_screen.dart';
+import 'settings_screen.dart';
 import 'sidebar_nav.dart';
 import 'snapshots_screen.dart';
 import 'wide_dashboard_view.dart';
@@ -75,7 +78,10 @@ class _HomeScreenState extends State<HomeScreen> {
     await ReminderScheduler.instance.scheduleMonthEndReminder(entries);
 
     final accounts = await widget.repository.watchAccounts().first;
-    final summaries = computeMonthSummaries(entries: entries, accounts: accounts);
+    final summaries = computeMonthSummaries(
+      entries: entries,
+      accounts: accounts,
+    );
     if (summaries.isEmpty) return;
 
     await _checkMilestones(summaries);
@@ -86,7 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final latestNetSavings = summaries.last.netSavings;
     final targets = await NetWorthPreferences.instance.getTargets();
     targets.sort();
-    final celebrated = await NetWorthPreferences.instance.getCelebratedTargets();
+    final celebrated = await NetWorthPreferences.instance
+        .getCelebratedTargets();
 
     for (final target in targets) {
       if (celebrated.contains(target) || latestNetSavings < target) continue;
@@ -138,13 +145,17 @@ class _HomeScreenState extends State<HomeScreen> {
             authService: widget.authService,
             themeController: widget.themeController,
             selectedSection: _wideSection,
-            onSelectDashboard: () => setState(() => _wideSection = WideSection.dashboard),
-            onSelectSnapshots: () => setState(() => _wideSection = WideSection.snapshots),
-            onOpenAccounts: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ManageAccountsScreen(repository: widget.repository),
-              ),
-            ),
+            onSelectDashboard: () =>
+                setState(() => _wideSection = WideSection.dashboard),
+            onSelectSnapshots: () =>
+                setState(() => _wideSection = WideSection.snapshots),
+            onSelectAccounts: () =>
+                setState(() => _wideSection = WideSection.accounts),
+            onSelectSettings: () =>
+                setState(() => _wideSection = WideSection.settings),
+            onSelectExport: () =>
+                setState(() => _wideSection = WideSection.export),
+            onSelectHelp: () => setState(() => _wideSection = WideSection.help),
           ),
           Expanded(
             child: ColoredBox(
@@ -165,28 +176,59 @@ class _HomeScreenState extends State<HomeScreen> {
                       final entries = entriesSnap.data!;
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(40, 32, 40, 32),
-                        child: _wideSection == WideSection.dashboard
-                            ? SingleChildScrollView(
-                                child: WideDashboardView(
-                                  accounts: accounts,
-                                  entries: entries,
-                                  onSeeAllSnapshots: () => setState(() {
-                                    _wideSection = WideSection.snapshots;
-                                  }),
-                                  onSelectEntry: (id) => setState(() {
-                                    _wideSection = WideSection.snapshots;
-                                    _selectedSnapshotEntryId = id;
-                                  }),
-                                ),
-                              )
-                            : WideSnapshotsView(
-                                repository: widget.repository,
-                                accounts: accounts,
-                                entries: entries,
-                                selectedEntryId: _selectedSnapshotEntryId,
-                                onSelectEntry: (id) =>
-                                    setState(() => _selectedSnapshotEntryId = id),
-                              ),
+                        child: switch (_wideSection) {
+                          WideSection.dashboard => SingleChildScrollView(
+                            child: WideDashboardView(
+                              accounts: accounts,
+                              entries: entries,
+                              onSeeAllSnapshots: () => setState(() {
+                                _wideSection = WideSection.snapshots;
+                              }),
+                              onSelectEntry: (id) => setState(() {
+                                _wideSection = WideSection.snapshots;
+                                _selectedSnapshotEntryId = id;
+                              }),
+                            ),
+                          ),
+                          WideSection.snapshots => WideSnapshotsView(
+                            repository: widget.repository,
+                            accounts: accounts,
+                            entries: entries,
+                            selectedEntryId: _selectedSnapshotEntryId,
+                            onSelectEntry: (id) =>
+                                setState(() => _selectedSnapshotEntryId = id),
+                          ),
+                          WideSection.accounts => ManageAccountsScreen(
+                            embedded: true,
+                            repository: widget.repository,
+                          ),
+                          WideSection.settings => SettingsScreen(
+                            embedded: true,
+                            themeController: widget.themeController,
+                            repository: widget.repository,
+                            authService: widget.authService,
+                          ),
+                          WideSection.export => ExportScreen(
+                            embedded: true,
+                            repository: widget.repository,
+                          ),
+                          WideSection.help => PlaceholderScreen(
+                            embedded: true,
+                            headerTitle: 'Help & About',
+                            icon: Icons.help_outline,
+                            logo: Image.asset(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? 'assets/branding/lockup_dark.png'
+                                  : 'assets/branding/lockup_light.png',
+                              height: 40,
+                            ),
+                            heading: 'Net Worth Tracker',
+                            subtitle: 'Version 1.0.0',
+                            message:
+                                'Track assets, liabilities and savings across all your '
+                                'accounts, month over month.',
+                          ),
+                        },
                       );
                     },
                   );
@@ -242,7 +284,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           Text(
                             'Liquidity across all accounts',
-                            style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: uiFont,
+                              color: palette.muted,
+                            ),
                           ),
                         ],
                       ),
@@ -266,10 +312,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         stream: widget.repository.watchMonthlyEntries(),
                         builder: (context, entriesSnap) {
                           if (!entriesSnap.hasData) {
-                            return const Center(child: CircularProgressIndicator());
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
                           }
                           final entries = entriesSnap.data!;
-                          final summaries = computeMonthSummaries(entries: entries, accounts: accounts);
+                          final summaries = computeMonthSummaries(
+                            entries: entries,
+                            accounts: accounts,
+                          );
                           final recent = summaries.reversed.take(5).toList();
 
                           return ListView(
@@ -278,25 +329,40 @@ class _HomeScreenState extends State<HomeScreen> {
                               _HeroNetWorthCard(summaries: summaries),
                               const SizedBox(height: 14),
                               _NavCardRow(
-                                activeAccountsCount: accounts.where((a) => a.active).length,
+                                activeAccountsCount: accounts
+                                    .where((a) => a.active)
+                                    .length,
                                 snapshotsCount: entries.length,
-                                onOpenAccounts: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ManageAccountsScreen(repository: widget.repository),
-                                  ),
-                                ),
-                                onOpenSnapshots: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => SnapshotsScreen(repository: widget.repository),
-                                  ),
-                                ),
+                                onOpenAccounts: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ManageAccountsScreen(
+                                          repository: widget.repository,
+                                        ),
+                                      ),
+                                    ),
+                                onOpenSnapshots: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => SnapshotsScreen(
+                                          repository: widget.repository,
+                                        ),
+                                      ),
+                                    ),
                               ),
                               const _SectionLabel('Trends'),
-                              NetWorthTrendsSection(accounts: accounts, entries: entries),
+                              NetWorthTrendsSection(
+                                accounts: accounts,
+                                entries: entries,
+                              ),
                               Padding(
-                                padding: const EdgeInsets.only(top: 18, bottom: 6),
+                                padding: const EdgeInsets.only(
+                                  top: 18,
+                                  bottom: 6,
+                                ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       'RECENT SNAPSHOTS',
@@ -309,20 +375,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                     TextButton(
-                                      onPressed: () => Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => SnapshotsScreen(repository: widget.repository),
-                                        ),
-                                      ),
+                                      onPressed: () =>
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => SnapshotsScreen(
+                                                repository: widget.repository,
+                                              ),
+                                            ),
+                                          ),
                                       style: TextButton.styleFrom(
                                         foregroundColor: AppPalette.blueDeep,
                                         padding: EdgeInsets.zero,
                                         minimumSize: const Size(0, 0),
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       child: const Text(
                                         'See all',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -330,17 +403,27 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               if (recent.isEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   child: Text(
                                     'No months tracked yet.',
-                                    style: TextStyle(fontFamily: uiFont, color: palette.muted),
+                                    style: TextStyle(
+                                      fontFamily: uiFont,
+                                      color: palette.muted,
+                                    ),
                                   ),
                                 )
                               else
                                 for (final summary in recent)
                                   MonthRowTile(
                                     summary: summary,
-                                    onTap: () => _openEntry(context, summary, entries, accounts),
+                                    onTap: () => _openEntry(
+                                      context,
+                                      summary,
+                                      entries,
+                                      accounts,
+                                    ),
                                   ),
                             ],
                           );
@@ -400,7 +483,8 @@ class _HeroNetWorthCardState extends State<_HeroNetWorthCard> {
 
   static const _maskedAmount = '₱ ********';
 
-  String _amount(double value) => _hidden ? _maskedAmount : currencyFormat.format(value);
+  String _amount(double value) =>
+      _hidden ? _maskedAmount : currencyFormat.format(value);
 
   @override
   Widget build(BuildContext context) {
@@ -447,7 +531,9 @@ class _HeroNetWorthCardState extends State<_HeroNetWorthCard> {
                 child: Padding(
                   padding: const EdgeInsets.all(2),
                   child: Icon(
-                    _hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _hidden
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     size: 18,
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
@@ -490,7 +576,9 @@ class _HeroNetWorthCardState extends State<_HeroNetWorthCard> {
             margin: const EdgeInsets.only(top: 16),
             padding: const EdgeInsets.only(top: 14),
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.25))),
+              border: Border(
+                top: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+              ),
             ),
             child: Row(
               children: [
@@ -520,7 +608,11 @@ class _HeroNetWorthCardState extends State<_HeroNetWorthCard> {
                   ),
                 ),
                 const SizedBox(width: 14),
-                Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.25)),
+                Container(
+                  width: 1,
+                  height: 32,
+                  color: Colors.white.withValues(alpha: 0.25),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -577,7 +669,8 @@ class _NavCardRow extends StatelessWidget {
           child: _NavCard(
             icon: Icons.account_balance_outlined,
             title: 'Accounts',
-            subtitle: '$activeAccountsCount active account${activeAccountsCount == 1 ? '' : 's'}',
+            subtitle:
+                '$activeAccountsCount active account${activeAccountsCount == 1 ? '' : 's'}',
             onTap: onOpenAccounts,
           ),
         ),
@@ -586,7 +679,8 @@ class _NavCardRow extends StatelessWidget {
           child: _NavCard(
             icon: Icons.dashboard_outlined,
             title: 'Snapshots',
-            subtitle: '$snapshotsCount snapshot${snapshotsCount == 1 ? '' : 's'} recorded',
+            subtitle:
+                '$snapshotsCount snapshot${snapshotsCount == 1 ? '' : 's'} recorded',
             onTap: onOpenSnapshots,
           ),
         ),
@@ -651,7 +745,11 @@ class _NavCard extends StatelessWidget {
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: uiFont,
+                    color: palette.muted,
+                  ),
                 ),
               ],
             ),

@@ -10,15 +10,14 @@ import '../models/account.dart';
 import '../models/month_summary.dart';
 import '../models/monthly_entry.dart';
 import 'design_chip.dart';
-import 'export_screen.dart';
-import 'placeholder_screen.dart';
-import 'settings_screen.dart';
 
-/// Which inline section of the wide main area is currently showing —
-/// Dashboard and Snapshots switch in place; Accounts/Settings/Vault/
-/// Export/Help stay pushed routes, same as their mobile drawer/nav-card
-/// equivalents.
-enum WideSection { dashboard, snapshots }
+/// Which inline section of the wide main area is currently showing.
+/// Dashboard, Snapshots, Accounts, Settings, Export, and Help all switch in
+/// place inside the persistent sidebar shell — matching the verified
+/// design's single-page `wideSection` state machine (no route push, no
+/// transition). Secure Vault is the only sidebar destination that still
+/// pushes a route, since it's a PIN/biometric-gated flow outside the design.
+enum WideSection { dashboard, snapshots, accounts, settings, export, help }
 
 /// Persistent left sidebar for the wide (web) layout — replaces the mobile
 /// hamburger + end drawer with an always-visible nav, matching the verified
@@ -32,7 +31,10 @@ class SidebarNav extends StatelessWidget {
     required this.selectedSection,
     required this.onSelectDashboard,
     required this.onSelectSnapshots,
-    required this.onOpenAccounts,
+    required this.onSelectAccounts,
+    required this.onSelectSettings,
+    required this.onSelectExport,
+    required this.onSelectHelp,
   });
 
   final BudgetRepository repository;
@@ -41,7 +43,10 @@ class SidebarNav extends StatelessWidget {
   final WideSection selectedSection;
   final VoidCallback onSelectDashboard;
   final VoidCallback onSelectSnapshots;
-  final VoidCallback onOpenAccounts;
+  final VoidCallback onSelectAccounts;
+  final VoidCallback onSelectSettings;
+  final VoidCallback onSelectExport;
+  final VoidCallback onSelectHelp;
 
   @override
   Widget build(BuildContext context) {
@@ -70,8 +75,8 @@ class SidebarNav extends StatelessWidget {
               _SidebarItem(
                 icon: Icons.account_balance_outlined,
                 label: 'Accounts',
-                active: false,
-                onTap: onOpenAccounts,
+                active: selectedSection == WideSection.accounts,
+                onTap: onSelectAccounts,
               ),
               _SidebarItem(
                 icon: Icons.dashboard_outlined,
@@ -85,16 +90,8 @@ class SidebarNav extends StatelessWidget {
               _SidebarItem(
                 icon: Icons.settings_outlined,
                 label: 'Settings',
-                active: false,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SettingsScreen(
-                      themeController: themeController,
-                      repository: repository,
-                      authService: authService,
-                    ),
-                  ),
-                ),
+                active: selectedSection == WideSection.settings,
+                onTap: onSelectSettings,
               ),
               _SidebarItem(
                 icon: Icons.shield_outlined,
@@ -105,40 +102,23 @@ class SidebarNav extends StatelessWidget {
                   if (!context.mounted) return;
                   openVault(
                     context,
-                    accounts: [for (final a in accounts) (id: a.id, name: a.name)],
+                    accounts: [
+                      for (final a in accounts) (id: a.id, name: a.name),
+                    ],
                   );
                 },
               ),
               _SidebarItem(
                 icon: Icons.file_download_outlined,
                 label: 'Export / Backup',
-                active: false,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ExportScreen(repository: repository)),
-                ),
+                active: selectedSection == WideSection.export,
+                onTap: onSelectExport,
               ),
               _SidebarItem(
                 icon: Icons.help_outline,
                 label: 'Help / About',
-                active: false,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (routeContext) => PlaceholderScreen(
-                      headerTitle: 'Help & About',
-                      icon: Icons.help_outline,
-                      logo: Image.asset(
-                        Theme.of(routeContext).brightness == Brightness.dark
-                            ? 'assets/branding/lockup_dark.png'
-                            : 'assets/branding/lockup_light.png',
-                        height: 40,
-                      ),
-                      heading: 'Net Worth Tracker',
-                      subtitle: 'Version 1.0.0',
-                      message: 'Track assets, liabilities and savings across all your '
-                          'accounts, month over month.',
-                    ),
-                  ),
-                ),
+                active: selectedSection == WideSection.help,
+                onTap: onSelectHelp,
               ),
               const Spacer(),
               Container(height: 1, color: palette.border),
@@ -214,7 +194,9 @@ class _SidebarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Material(
-      color: active ? AppPalette.blueDeep.withValues(alpha: 0.12) : Colors.transparent,
+      color: active
+          ? AppPalette.blueDeep.withValues(alpha: 0.12)
+          : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -223,7 +205,11 @@ class _SidebarItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           child: Row(
             children: [
-              Icon(icon, size: 20, color: active ? AppPalette.blueDeep : palette.muted),
+              Icon(
+                icon,
+                size: 20,
+                color: active ? AppPalette.blueDeep : palette.muted,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -257,7 +243,9 @@ class _SidebarBrand extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(bottom: 16),
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: palette.border))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: palette.border)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -265,7 +253,11 @@ class _SidebarBrand extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(7),
-                child: Image.asset('assets/branding/app_mark.png', width: 28, height: 28),
+                child: Image.asset(
+                  'assets/branding/app_mark.png',
+                  width: 28,
+                  height: 28,
+                ),
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -284,7 +276,14 @@ class _SidebarBrand extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Net worth', style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted)),
+          Text(
+            'Net worth',
+            style: TextStyle(
+              fontSize: 12,
+              fontFamily: uiFont,
+              color: palette.muted,
+            ),
+          ),
           const SizedBox(height: 2),
           StreamBuilder<List<Account>>(
             stream: repository.watchAccounts(),
@@ -297,13 +296,13 @@ class _SidebarBrand extends StatelessWidget {
                   final netWorthText = loading
                       ? '…'
                       : entries.isEmpty
-                          ? currencyFormat.format(0)
-                          : currencyFormat.format(
-                              computeMonthSummaries(
-                                entries: entries,
-                                accounts: accountsSnap.data!,
-                              ).last.netSavings,
-                            );
+                      ? currencyFormat.format(0)
+                      : currencyFormat.format(
+                          computeMonthSummaries(
+                            entries: entries,
+                            accounts: accountsSnap.data!,
+                          ).last.netSavings,
+                        );
                   return Text(
                     netWorthText,
                     style: TextStyle(

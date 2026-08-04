@@ -34,7 +34,14 @@ const _denominations = <_Denomination>[
 /// [Account] or persist anything — the caller reads the result off
 /// [Navigator.pop] and decides what to do with it.
 class CashCounterSheet extends StatefulWidget {
-  const CashCounterSheet({super.key});
+  const CashCounterSheet({super.key, this.asModal = false});
+
+  /// True when shown as a centered wide/web Modal (see `month_detail_screen
+  /// .dart`'s calculator-icon call site) instead of a mobile bottom sheet —
+  /// drops the drag handle and the bottom-sheet-specific outer chrome
+  /// (top-only radius, `SafeArea`/`viewInsets` padding), since the hosting
+  /// `Dialog` already provides background, shape, and centering.
+  final bool asModal;
 
   @override
   State<CashCounterSheet> createState() => _CashCounterSheetState();
@@ -81,130 +88,150 @@ class _CashCounterSheetState extends State<CashCounterSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final core = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!widget.asModal)
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: palette.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Cash counter',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                fontFamily: uiFont,
+                color: palette.heading,
+              ),
+            ),
+            TextButton(
+              onPressed: _clear,
+              style: TextButton.styleFrom(foregroundColor: AppPalette.blueDeep),
+              child: const Text(
+                'Clear',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                for (var i = 0; i < _denominations.length; i++)
+                  _DenominationRow(
+                    denomination: _denominations[i],
+                    controller: _qtyControllers[i],
+                    subtotal: _qtyAt(i) * _denominations[i].value,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.only(top: 12),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: palette.border)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: uiFont,
+                  color: palette.heading,
+                ),
+              ),
+              Text(
+                currencyFormat.format(_total),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: monoFont,
+                  color: palette.heading,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    side: BorderSide(color: palette.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    foregroundColor: palette.heading,
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(_total),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    backgroundColor: AppPalette.blueDeep,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Use total'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (widget.asModal) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+        child: core,
+      );
+    }
+
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: palette.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: palette.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Cash counter',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: uiFont,
-                        color: palette.heading,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _clear,
-                      style: TextButton.styleFrom(foregroundColor: AppPalette.blueDeep),
-                      child: const Text(
-                        'Clear',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                  ],
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < _denominations.length; i++)
-                          _DenominationRow(
-                            denomination: _denominations[i],
-                            controller: _qtyControllers[i],
-                            subtotal: _qtyAt(i) * _denominations[i].value,
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.only(top: 12),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: palette.border)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: uiFont,
-                          color: palette.heading,
-                        ),
-                      ),
-                      Text(
-                        currencyFormat.format(_total),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: monoFont,
-                          color: palette.heading,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            side: BorderSide(color: palette.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            foregroundColor: palette.heading,
-                          ),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.of(context).pop(_total),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            backgroundColor: AppPalette.blueDeep,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('Use total'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: core,
           ),
         ),
       ),
@@ -228,7 +255,9 @@ class _DenominationRow extends StatelessWidget {
     final palette = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: palette.border))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: palette.border)),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -245,7 +274,10 @@ class _DenominationRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: palette.surfaceAlt,
                     borderRadius: BorderRadius.circular(8),
@@ -270,7 +302,11 @@ class _DenominationRow extends StatelessWidget {
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
+              style: TextStyle(
+                fontSize: 13,
+                fontFamily: uiFont,
+                color: palette.heading,
+              ),
               decoration: InputDecoration(
                 isDense: true,
                 filled: true,
@@ -293,7 +329,11 @@ class _DenominationRow extends StatelessWidget {
             child: Text(
               currencyFormat.format(subtotal),
               textAlign: TextAlign.end,
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: palette.text),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: palette.text,
+              ),
             ),
           ),
         ],

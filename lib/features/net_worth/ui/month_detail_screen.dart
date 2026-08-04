@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
+import '../../../core/responsive.dart';
 import '../../../core/thousands_input_formatter.dart';
 import '../data/budget_repository.dart';
 import '../data/home_widget_sync.dart';
@@ -112,7 +113,9 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
     _controllers = {
       for (final a in widget.accounts)
         a.id: TextEditingController(
-          text: formatGrouped(widget.entry.balances[a.id]?.toStringAsFixed(2) ?? ''),
+          text: formatGrouped(
+            widget.entry.balances[a.id]?.toStringAsFixed(2) ?? '',
+          ),
         ),
     };
     _noteController = TextEditingController(text: widget.entry.note ?? '');
@@ -141,7 +144,9 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   }
 
   Future<void> _persistDraft() async {
-    final balances = {for (final e in _controllers.entries) e.key: e.value.text};
+    final balances = {
+      for (final e in _controllers.entries) e.key: e.value.text,
+    };
     await MonthDraftStore.instance.save(
       widget.entry.id,
       MonthDraft(balances: balances, note: _noteController.text),
@@ -155,7 +160,9 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
     // Flush the latest keystrokes even if the debounce hadn't fired yet —
     // this is the exact "accidental back tap" moment the draft exists for.
     if (!_committed && hadPendingEdits) {
-      final balances = {for (final e in _controllers.entries) e.key: e.value.text};
+      final balances = {
+        for (final e in _controllers.entries) e.key: e.value.text,
+      };
       MonthDraftStore.instance.save(
         widget.entry.id,
         MonthDraft(balances: balances, note: _noteController.text),
@@ -235,7 +242,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
       _draftSaveTimer?.cancel();
       await MonthDraftStore.instance.clear(widget.entry.id);
       await updateHomeWidget(
-        MonthSummary.compute(entry: entry, previous: widget.previous, accounts: widget.accounts),
+        MonthSummary.compute(
+          entry: entry,
+          previous: widget.previous,
+          accounts: widget.accounts,
+        ),
       );
       // Embedded (wide Snapshots panel): stay open showing the just-saved
       // entry, matching the verified design's `saveEntry()` — it only
@@ -254,22 +265,27 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   Future<void> _toggleLock() async {
     final newLocked = !_locked;
     setState(() => _locked = newLocked);
-    await widget.repository.saveMonthlyEntry(_liveEntry.copyWith(locked: newLocked));
+    await widget.repository.saveMonthlyEntry(
+      _liveEntry.copyWith(locked: newLocked),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.embedded) return _buildEmbedded(context);
 
-    final visibleAccounts = widget.accounts
-        .where((a) => a.active || widget.entry.balances.containsKey(a.id))
-        .toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    final visibleAccounts =
+        widget.accounts
+            .where((a) => a.active || widget.entry.balances.containsKey(a.id))
+            .toList()
+          ..sort((a, b) => a.order.compareTo(b.order));
 
-    final assets =
-        visibleAccounts.where((a) => a.section == AccountSection.asset);
-    final reserved = visibleAccounts
-        .where((a) => a.section == AccountSection.reservedLiability);
+    final assets = visibleAccounts.where(
+      (a) => a.section == AccountSection.asset,
+    );
+    final reserved = visibleAccounts.where(
+      (a) => a.section == AccountSection.reservedLiability,
+    );
 
     final summary = MonthSummary.compute(
       entry: _liveEntry,
@@ -280,7 +296,9 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
     final palette = context.palette;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.92,
         minChildSize: 0.5,
@@ -363,7 +381,8 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                               ),
                               PillSwitch(
                                 value: _showPrevious,
-                                onChanged: (v) => setState(() => _showPrevious = v),
+                                onChanged: (v) =>
+                                    setState(() => _showPrevious = v),
                               ),
                             ],
                           ),
@@ -405,7 +424,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
                           controller: _noteController,
                           readOnly: _locked,
                           maxLines: 2,
-                          style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontFamily: uiFont,
+                            color: palette.heading,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Optional note about this month',
                             filled: true,
@@ -440,14 +463,18 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
   /// `overflow-y:auto` on the whole column, header and summary included, not
   /// a separate pinned region like the mobile sheet).
   Widget _buildEmbedded(BuildContext context) {
-    final visibleAccounts = widget.accounts
-        .where((a) => a.active || widget.entry.balances.containsKey(a.id))
-        .toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    final visibleAccounts =
+        widget.accounts
+            .where((a) => a.active || widget.entry.balances.containsKey(a.id))
+            .toList()
+          ..sort((a, b) => a.order.compareTo(b.order));
 
-    final assets = visibleAccounts.where((a) => a.section == AccountSection.asset);
-    final reserved =
-        visibleAccounts.where((a) => a.section == AccountSection.reservedLiability);
+    final assets = visibleAccounts.where(
+      (a) => a.section == AccountSection.asset,
+    );
+    final reserved = visibleAccounts.where(
+      (a) => a.section == AccountSection.reservedLiability,
+    );
 
     final summary = MonthSummary.compute(
       entry: _liveEntry,
@@ -483,7 +510,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
               onPressed: () => widget.onClose?.call(),
             ),
             const SizedBox(width: 8),
-            SolidIconButton(icon: Icons.check, loading: _saving, onPressed: _save),
+            SolidIconButton(
+              icon: Icons.check,
+              loading: _saving,
+              onPressed: _save,
+            ),
           ],
         ),
         if (widget.previous != null)
@@ -545,7 +576,11 @@ class _MonthDetailSheetState extends State<MonthDetailSheet> {
             controller: _noteController,
             readOnly: _locked,
             maxLines: 2,
-            style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.heading),
+            style: TextStyle(
+              fontSize: 13,
+              fontFamily: uiFont,
+              color: palette.heading,
+            ),
             decoration: InputDecoration(
               hintText: 'Optional note about this month',
               filled: true,
@@ -618,8 +653,8 @@ class _AccountRow extends StatelessWidget {
     final icon = account.section == AccountSection.asset
         ? Icons.account_balance_wallet_outlined
         : account.reservedKind == ReservedKind.creditCard
-            ? Icons.credit_card_outlined
-            : Icons.savings_outlined;
+        ? Icons.credit_card_outlined
+        : Icons.savings_outlined;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -657,7 +692,11 @@ class _AccountRow extends StatelessWidget {
                     'Last month: ${currencyFormat.format(previousBalance)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10.5, fontFamily: uiFont, color: palette.muted),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontFamily: uiFont,
+                      color: palette.muted,
+                    ),
                   ),
               ],
             ),
@@ -678,14 +717,41 @@ class _AccountRow extends StatelessWidget {
                   onTap: locked
                       ? null
                       : () async {
-                          final total = await showModalBottomSheet<double>(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => const CashCounterSheet(),
-                          );
+                          final total = context.isWideLayout
+                              ? await showDialog<double>(
+                                  context: context,
+                                  builder: (dialogContext) => Dialog(
+                                    backgroundColor:
+                                        dialogContext.palette.surface,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    insetPadding: const EdgeInsets.all(24),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: 440,
+                                        maxHeight:
+                                            MediaQuery.of(
+                                              dialogContext,
+                                            ).size.height *
+                                            0.85,
+                                      ),
+                                      child: const CashCounterSheet(
+                                        asModal: true,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : await showModalBottomSheet<double>(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => const CashCounterSheet(),
+                                );
                           if (total != null) {
-                            controller.text = formatGrouped(total.toStringAsFixed(2));
+                            controller.text = formatGrouped(
+                              total.toStringAsFixed(2),
+                            );
                           }
                         },
                   child: Icon(
@@ -718,14 +784,23 @@ class _AccountRow extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text('₱', style: TextStyle(fontSize: 12, fontFamily: monoFont, color: palette.muted)),
+                Text(
+                  '₱',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: monoFont,
+                    color: palette.muted,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
                     controller: controller,
                     readOnly: locked,
                     textAlign: TextAlign.end,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [ThousandsInputFormatter()],
                     style: TextStyle(
                       fontSize: 12.5,
@@ -762,7 +837,13 @@ class _SummaryBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.surface,
         border: Border(top: BorderSide(color: palette.border)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, -6))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
+          ),
+        ],
       ),
       child: _SummaryLines(summary: summary),
     );
@@ -784,18 +865,25 @@ class _SummaryLines extends StatelessWidget {
     final deltaColor = delta == null
         ? palette.muted
         : delta >= 0
-            ? AppPalette.ok
-            : AppPalette.error;
+        ? AppPalette.ok
+        : AppPalette.error;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SummaryLine('Total Assets', currencyFormat.format(summary.totalAssets)),
+        _SummaryLine(
+          'Total Assets',
+          currencyFormat.format(summary.totalAssets),
+        ),
         _SummaryLine(
           'Reserved & Liabilities',
           currencyFormat.format(summary.totalReservedLiabilities),
         ),
-        Container(height: 1, color: palette.border, margin: const EdgeInsets.symmetric(vertical: 6)),
+        Container(
+          height: 1,
+          color: palette.border,
+          margin: const EdgeInsets.symmetric(vertical: 6),
+        ),
         _SummaryLine(
           'Net Savings',
           currencyFormat.format(summary.netSavings),
@@ -814,7 +902,13 @@ class _SummaryLines extends StatelessWidget {
 }
 
 class _SummaryLine extends StatelessWidget {
-  const _SummaryLine(this.label, this.value, {this.bold = false, this.small = false, this.color});
+  const _SummaryLine(
+    this.label,
+    this.value, {
+    this.bold = false,
+    this.small = false,
+    this.color,
+  });
 
   final String label;
   final String value;
@@ -827,7 +921,9 @@ class _SummaryLine extends StatelessWidget {
     final palette = context.palette;
     final style = TextStyle(
       fontSize: bold ? 14 : (small ? 12 : 12.5),
-      fontWeight: bold ? FontWeight.w800 : (small ? FontWeight.w700 : FontWeight.normal),
+      fontWeight: bold
+          ? FontWeight.w800
+          : (small ? FontWeight.w700 : FontWeight.normal),
       fontFamily: uiFont,
       color: color ?? (bold ? palette.heading : palette.text),
     );

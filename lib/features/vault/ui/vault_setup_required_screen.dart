@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/adaptive_route.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/pin_lock/create_pin_screen.dart';
 import '../../../core/pin_lock/pin_store.dart';
@@ -13,16 +14,16 @@ class VaultSetupRequiredScreen extends StatelessWidget {
   const VaultSetupRequiredScreen({super.key});
 
   Future<void> _setUpPin(BuildContext context) async {
-    final pin = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const CreatePinScreen()),
-    );
+    final pin = await Navigator.of(
+      context,
+    ).push<String>(adaptiveRoute(context, (_) => const CreatePinScreen()));
     if (pin == null || !context.mounted) return;
     await PinStore.instance.setPin(pin);
     await VaultStore.instance.loadAll();
     if (!context.mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const VaultHomeScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(adaptiveRoute(context, (_) => const VaultHomeScreen()));
   }
 
   @override
@@ -53,15 +54,24 @@ class VaultSetupRequiredScreen extends StatelessWidget {
                 'locally on this device. A PIN is required before it can be '
                 'opened at all.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, fontFamily: uiFont, color: palette.muted),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontFamily: uiFont,
+                  color: palette.muted,
+                ),
               ),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: () => _setUpPin(context),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppPalette.blueDeep,
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Set up PIN'),
               ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/adaptive_route.dart';
 import '../../../core/pin_lock/biometric_auth.dart';
 import '../../../core/pin_lock/pin_store.dart';
 import '../../../core/pin_lock/verify_pin_screen.dart';
+import '../../../core/responsive.dart';
 import '../data/vault_store.dart';
 import '../models/vault_item.dart';
 import 'vault_home_screen.dart';
@@ -24,32 +26,42 @@ Future<void> openVault(
   // the drawer (and everything in it) gets disposed ~250ms after it closes —
   // long before the user finishes a biometric prompt or PIN entry. The
   // NavigatorState itself outlives that, so it's what subsequent
-  // navigation/mounted checks need to key off of.
+  // navigation/mounted checks need to key off of. `isWide` is captured
+  // alongside it for the same reason `adaptiveRoute` can't just take
+  // `context` here — it needs a still-mounted context to read `MediaQuery`.
   final navigator = Navigator.of(context);
+  final isWide = context.isWideLayout;
 
   final pinIsSet = await PinStore.instance.isSet();
   if (!navigator.mounted) return;
 
   if (!pinIsSet) {
     await navigator.push(
-      MaterialPageRoute(builder: (_) => const VaultSetupRequiredScreen()),
+      buildAdaptiveRoute(
+        wide: isWide,
+        builder: (_) => const VaultSetupRequiredScreen(),
+      ),
     );
     return;
   }
 
-  final biometricReady = await PinStore.instance.isBiometricEnabled() &&
+  final biometricReady =
+      await PinStore.instance.isBiometricEnabled() &&
       await BiometricAuth.instance.isAvailable();
   if (!navigator.mounted) return;
 
   var unlocked = false;
   if (biometricReady) {
-    unlocked = await BiometricAuth.instance.authenticate(reason: 'Unlock Secure Vault');
+    unlocked = await BiometricAuth.instance.authenticate(
+      reason: 'Unlock Secure Vault',
+    );
     if (!navigator.mounted) return;
   }
 
   if (!unlocked) {
     final verified = await navigator.push<bool>(
-      MaterialPageRoute(
+      buildAdaptiveRoute(
+        wide: isWide,
         builder: (_) => const VerifyPinScreen(title: 'Enter PIN to open Vault'),
       ),
     );
@@ -61,6 +73,9 @@ Future<void> openVault(
   if (!navigator.mounted) return;
 
   navigator.push(
-    MaterialPageRoute(builder: (_) => VaultHomeScreen(accounts: accounts)),
+    buildAdaptiveRoute(
+      wide: isWide,
+      builder: (_) => VaultHomeScreen(accounts: accounts),
+    ),
   );
 }

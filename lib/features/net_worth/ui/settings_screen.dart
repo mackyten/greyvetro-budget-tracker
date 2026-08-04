@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/adaptive_route.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/pin_lock/biometric_auth.dart';
 import '../../../core/pin_lock/create_pin_screen.dart';
 import '../../../core/pin_lock/pin_store.dart';
 import '../../../core/pin_lock/verify_pin_screen.dart';
+import '../../../core/responsive.dart';
 import '../../../core/theme_controller.dart';
 import '../../vault/data/vault_store.dart';
 import '../data/budget_repository.dart';
@@ -23,11 +25,18 @@ class SettingsScreen extends StatefulWidget {
     required this.themeController,
     required this.repository,
     required this.authService,
+    this.embedded = false,
   });
 
   final ThemeController themeController;
   final BudgetRepository repository;
   final AuthService authService;
+
+  /// True when hosted inline in the wide layout's persistent sidebar shell
+  /// instead of pushed as its own full screen — swaps the back-button header
+  /// for the design's `wideSectionTitle` + capped-width column. Mobile
+  /// (`embedded: false`, the default) is untouched.
+  final bool embedded;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -53,7 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadInflationRate() async {
     final rate = await NetWorthPreferences.instance.getAnnualInflationRate();
     if (!mounted) return;
-    _inflationRateController.text = rate == 0 ? '' : (rate * 100).toStringAsFixed(1);
+    _inflationRateController.text = rate == 0
+        ? ''
+        : (rate * 100).toStringAsFixed(1);
   }
 
   void _onInflationRateChanged(String text) {
@@ -97,16 +108,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
       if (!mounted) return;
-      final newPin = await Navigator.of(context).push<String>(
-        MaterialPageRoute(builder: (_) => const CreatePinScreen()),
-      );
+      final newPin = await Navigator.of(
+        context,
+      ).push<String>(adaptiveRoute(context, (_) => const CreatePinScreen()));
       if (newPin == null || !mounted) return;
       await PinStore.instance.setPin(newPin);
       if (mounted) setState(() => _pinEnabled = true);
     } else {
       final verified = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => const VerifyPinScreen(title: 'Enter PIN to disable lock'),
+        adaptiveRoute(
+          context,
+          (_) => const VerifyPinScreen(title: 'Enter PIN to disable lock'),
         ),
       );
       if (verified != true || !mounted) return;
@@ -118,11 +130,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _changePin() async {
     final verified = await Navigator.of(
       context,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const VerifyPinScreen()));
+    ).push<bool>(adaptiveRoute(context, (_) => const VerifyPinScreen()));
     if (verified != true || !mounted) return;
     final newPin = await Navigator.of(
       context,
-    ).push<String>(MaterialPageRoute(builder: (_) => const CreatePinScreen()));
+    ).push<String>(adaptiveRoute(context, (_) => const CreatePinScreen()));
     if (newPin == null) return;
     await PinStore.instance.setPin(newPin);
   }
@@ -181,6 +193,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildWide(context);
     final palette = context.palette;
     return Scaffold(
       body: SafeArea(
@@ -216,345 +229,387 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-                children: [
-                  _SectionLabel('Appearance'),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      ValueListenableBuilder<ThemeMode>(
-                        valueListenable: widget.themeController,
-                        builder: (context, mode, _) => Row(
-                          children: [
-                            DesignChip(
-                              label: 'Light',
-                              active: mode == ThemeMode.light,
-                              onTap: () => widget.themeController.value = ThemeMode.light,
-                            ),
-                            const SizedBox(width: 8),
-                            DesignChip(
-                              label: 'Dark',
-                              active: mode == ThemeMode.dark,
-                              onTap: () => widget.themeController.value = ThemeMode.dark,
-                            ),
-                            const SizedBox(width: 8),
-                            DesignChip(
-                              label: 'System',
-                              active: mode == ThemeMode.system,
-                              onTap: () => widget.themeController.value = ThemeMode.system,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  _SectionLabel('Security'),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: palette.surfaceAlt,
-                      border: Border.all(color: palette.border),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'PIN lock',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  fontFamily: uiFont,
-                                  color: palette.heading,
-                                ),
-                              ),
-                              Text(
-                                'Require a PIN to open the app',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: uiFont,
-                                  color: palette.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _loadingPin
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : PillSwitch(value: _pinEnabled, onChanged: _onPinToggle),
-                      ],
-                    ),
-                  ),
-                  if (!_loadingPin && _pinEnabled) ...[
-                    const SizedBox(height: 8),
-                    Material(
-                      color: palette.surfaceAlt,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: _changePin,
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: palette.border),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Change PIN',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    fontFamily: uiFont,
-                                    color: palette.heading,
-                                  ),
-                                ),
-                              ),
-                              Icon(Icons.chevron_right, size: 20, color: palette.muted),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (_biometricAvailable) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: palette.surfaceAlt,
-                          border: Border.all(color: palette.border),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Use biometrics',
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w700,
-                                      fontFamily: uiFont,
-                                      color: palette.heading,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Unlock with fingerprint/face instead of the PIN',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontFamily: uiFont,
-                                      color: palette.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            PillSwitch(value: _biometricEnabled, onChanged: _onBiometricToggle),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                  const SizedBox(height: 18),
-                  _SectionLabel('Preferences'),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: palette.surfaceAlt,
-                      border: Border.all(color: palette.border),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Currency & locale',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: uiFont,
-                            color: palette.muted,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: palette.border,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Coming soon',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: uiFont,
-                              color: palette.muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: palette.surfaceAlt,
-                      border: Border.all(color: palette.border),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Inflation rate (annual %)',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: uiFont,
-                              color: palette.heading,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 64,
-                          child: TextField(
-                            controller: _inflationRateController,
-                            onChanged: _onInflationRateChanged,
-                            textAlign: TextAlign.end,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            style: TextStyle(fontSize: 13.5, fontFamily: monoFont, color: palette.heading),
-                            decoration: InputDecoration(
-                              hintText: '0.0',
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              filled: true,
-                              fillColor: palette.surface,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: palette.border),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: palette.border),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Material(
-                    color: palette.surfaceAlt,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const MilestonesSettingsScreen()),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: palette.border),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Milestones',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  fontFamily: uiFont,
-                                  color: palette.heading,
-                                ),
-                              ),
-                            ),
-                            Icon(Icons.chevron_right, size: 20, color: palette.muted),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _SectionLabel('Account'),
-                  const SizedBox(height: 4),
-                  Material(
-                    color: palette.surfaceAlt,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: _deletingAccount ? null : _confirmDeleteAccount,
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: palette.border),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Delete my account',
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w700,
-                                      fontFamily: uiFont,
-                                      color: AppPalette.error,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Erases synced data and everything stored on this device',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontFamily: uiFont,
-                                      color: palette.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_deletingAccount)
-                              const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            else
-                              Icon(Icons.chevron_right, size: 20, color: palette.muted),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                children: _bodyChildren(context),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildWide(BuildContext context) {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Settings',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            fontFamily: uiFont,
+            color: palette.heading,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: kWideNarrowMaxWidth),
+            child: ListView(children: _bodyChildren(context)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _bodyChildren(BuildContext context) {
+    final palette = context.palette;
+    return [
+      _SectionLabel('Appearance'),
+      const SizedBox(height: 4),
+      Row(
+        children: [
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: widget.themeController,
+            builder: (context, mode, _) => Row(
+              children: [
+                DesignChip(
+                  label: 'Light',
+                  active: mode == ThemeMode.light,
+                  onTap: () => widget.themeController.value = ThemeMode.light,
+                ),
+                const SizedBox(width: 8),
+                DesignChip(
+                  label: 'Dark',
+                  active: mode == ThemeMode.dark,
+                  onTap: () => widget.themeController.value = ThemeMode.dark,
+                ),
+                const SizedBox(width: 8),
+                DesignChip(
+                  label: 'System',
+                  active: mode == ThemeMode.system,
+                  onTap: () => widget.themeController.value = ThemeMode.system,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 18),
+      _SectionLabel('Security'),
+      const SizedBox(height: 4),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: palette.surfaceAlt,
+          border: Border.all(color: palette.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PIN lock',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: uiFont,
+                      color: palette.heading,
+                    ),
+                  ),
+                  Text(
+                    'Require a PIN to open the app',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: uiFont,
+                      color: palette.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _loadingPin
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : PillSwitch(value: _pinEnabled, onChanged: _onPinToggle),
+          ],
+        ),
+      ),
+      if (!_loadingPin && _pinEnabled) ...[
+        const SizedBox(height: 8),
+        Material(
+          color: palette.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: _changePin,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                border: Border.all(color: palette.border),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Change PIN',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: uiFont,
+                        color: palette.heading,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 20, color: palette.muted),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_biometricAvailable) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: palette.surfaceAlt,
+              border: Border.all(color: palette.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Use biometrics',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: uiFont,
+                          color: palette.heading,
+                        ),
+                      ),
+                      Text(
+                        'Unlock with fingerprint/face instead of the PIN',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: uiFont,
+                          color: palette.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                PillSwitch(
+                  value: _biometricEnabled,
+                  onChanged: _onBiometricToggle,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+      const SizedBox(height: 18),
+      _SectionLabel('Preferences'),
+      const SizedBox(height: 4),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: palette.surfaceAlt,
+          border: Border.all(color: palette.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Currency & locale',
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                fontFamily: uiFont,
+                color: palette.muted,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: palette.border,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Coming soon',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: uiFont,
+                  color: palette.muted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: palette.surfaceAlt,
+          border: Border.all(color: palette.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Inflation rate (annual %)',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: uiFont,
+                  color: palette.heading,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 64,
+              child: TextField(
+                controller: _inflationRateController,
+                onChanged: _onInflationRateChanged,
+                textAlign: TextAlign.end,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontFamily: monoFont,
+                  color: palette.heading,
+                ),
+                decoration: InputDecoration(
+                  hintText: '0.0',
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  filled: true,
+                  fillColor: palette.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: palette.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: palette.border),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      Material(
+        color: palette.surfaceAlt,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => Navigator.of(context).push(
+            adaptiveRoute(context, (_) => const MilestonesSettingsScreen()),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              border: Border.all(color: palette.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Milestones',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: uiFont,
+                      color: palette.heading,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, size: 20, color: palette.muted),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 18),
+      _SectionLabel('Account'),
+      const SizedBox(height: 4),
+      Material(
+        color: palette.surfaceAlt,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _deletingAccount ? null : _confirmDeleteAccount,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              border: Border.all(color: palette.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Delete my account',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: uiFont,
+                          color: AppPalette.error,
+                        ),
+                      ),
+                      Text(
+                        'Erases synced data and everything stored on this device',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: uiFont,
+                          color: palette.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_deletingAccount)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(Icons.chevron_right, size: 20, color: palette.muted),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 }
 

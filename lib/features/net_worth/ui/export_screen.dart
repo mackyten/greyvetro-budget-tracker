@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/design_tokens.dart';
+import '../../../core/responsive.dart';
 import '../data/budget_repository.dart';
 import '../data/export_builder.dart';
 import '../data/import_reader.dart';
@@ -21,9 +22,18 @@ enum _ExportFormat { csv, pdf, jsonBackup }
 /// explicit diff-summary confirmation first. Both halves only ever touch
 /// `Account`/`MonthlyEntry` — never `lib/features/vault/`.
 class ExportScreen extends StatefulWidget {
-  const ExportScreen({super.key, required this.repository});
+  const ExportScreen({
+    super.key,
+    required this.repository,
+    this.embedded = false,
+  });
 
   final BudgetRepository repository;
+
+  /// True when hosted inline in the wide layout's persistent sidebar shell
+  /// instead of pushed as its own full screen. Mobile (`embedded: false`,
+  /// the default) is untouched.
+  final bool embedded;
 
   @override
   State<ExportScreen> createState() => _ExportScreenState();
@@ -40,7 +50,10 @@ class _ExportScreenState extends State<ExportScreen> {
       final accounts = await widget.repository.watchAccounts().first;
       final entries = await widget.repository.watchMonthlyEntries().first;
       final dir = await getTemporaryDirectory();
-      final stamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-');
+      final stamp = DateTime.now().toIso8601String().replaceAll(
+        RegExp(r'[:.]'),
+        '-',
+      );
 
       final File file;
       switch (_format) {
@@ -52,7 +65,9 @@ class _ExportScreenState extends State<ExportScreen> {
           await file.writeAsBytes(await buildPdf(accounts, entries));
         case _ExportFormat.jsonBackup:
           file = File('${dir.path}/net_worth_backup_$stamp.json');
-          await file.writeAsString(jsonEncode(buildBackupJson(accounts, entries)));
+          await file.writeAsString(
+            jsonEncode(buildBackupJson(accounts, entries)),
+          );
       }
 
       if (!mounted) return;
@@ -94,7 +109,10 @@ class _ExportScreenState extends State<ExportScreen> {
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
@@ -107,9 +125,13 @@ class _ExportScreenState extends State<ExportScreen> {
 
     final existingAccountIds = existingAccounts.map((a) => a.id).toSet();
     final existingEntryIds = existingEntries.map((e) => e.id).toSet();
-    final newAccounts = parsed.accounts.where((a) => !existingAccountIds.contains(a.id)).length;
+    final newAccounts = parsed.accounts
+        .where((a) => !existingAccountIds.contains(a.id))
+        .length;
     final overwrittenAccounts = parsed.accounts.length - newAccounts;
-    final newEntries = parsed.entries.where((e) => !existingEntryIds.contains(e.id)).length;
+    final newEntries = parsed.entries
+        .where((e) => !existingEntryIds.contains(e.id))
+        .length;
     final overwrittenEntries = parsed.entries.length - newEntries;
 
     final confirmed = await showDialog<bool>(
@@ -146,20 +168,15 @@ class _ExportScreenState extends State<ExportScreen> {
     }
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Backup imported.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Backup imported.')));
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildWide(context);
     final palette = context.palette;
-    final fieldLabelStyle = TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.w700,
-      fontFamily: uiFont,
-      color: palette.muted,
-    );
 
     return Scaffold(
       body: SafeArea(
@@ -195,68 +212,117 @@ class _ExportScreenState extends State<ExportScreen> {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(18),
-                children: [
-                  Text('EXPORT', style: fieldLabelStyle),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      DesignChip(
-                        label: 'CSV',
-                        active: _format == _ExportFormat.csv,
-                        onTap: () => setState(() => _format = _ExportFormat.csv),
-                      ),
-                      DesignChip(
-                        label: 'PDF',
-                        active: _format == _ExportFormat.pdf,
-                        onTap: () => setState(() => _format = _ExportFormat.pdf),
-                      ),
-                      DesignChip(
-                        label: 'JSON Backup',
-                        active: _format == _ExportFormat.jsonBackup,
-                        onTap: () => setState(() => _format = _ExportFormat.jsonBackup),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  FilledButton(
-                    onPressed: _exporting ? null : _export,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      backgroundColor: AppPalette.blueDeep,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(_exporting ? 'Preparing…' : 'Export data'),
-                  ),
-                  const SizedBox(height: 28),
-                  Container(height: 1, color: palette.border),
-                  const SizedBox(height: 20),
-                  Text('IMPORT', style: fieldLabelStyle),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Restore accounts and months from a previously exported JSON '
-                    'backup. This will overwrite any accounts/months with matching '
-                    'ids. Vault items are never included.',
-                    style: TextStyle(fontSize: 12, fontFamily: uiFont, color: palette.muted),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: _importing ? null : _pickAndImport,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      side: BorderSide(color: palette.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      foregroundColor: palette.heading,
-                    ),
-                    child: Text(_importing ? 'Importing…' : 'Import backup'),
-                  ),
-                ],
+                children: _bodyChildren(context),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildWide(BuildContext context) {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Export / Backup',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            fontFamily: uiFont,
+            color: palette.heading,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Expanded(
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: kWideNarrowMaxWidth),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _bodyChildren(context),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _bodyChildren(BuildContext context) {
+    final palette = context.palette;
+    final fieldLabelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      fontFamily: uiFont,
+      color: palette.muted,
+    );
+    return [
+      Text('EXPORT', style: fieldLabelStyle),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          DesignChip(
+            label: 'CSV',
+            active: _format == _ExportFormat.csv,
+            onTap: () => setState(() => _format = _ExportFormat.csv),
+          ),
+          DesignChip(
+            label: 'PDF',
+            active: _format == _ExportFormat.pdf,
+            onTap: () => setState(() => _format = _ExportFormat.pdf),
+          ),
+          DesignChip(
+            label: 'JSON Backup',
+            active: _format == _ExportFormat.jsonBackup,
+            onTap: () => setState(() => _format = _ExportFormat.jsonBackup),
+          ),
+        ],
+      ),
+      const SizedBox(height: 14),
+      FilledButton(
+        onPressed: _exporting ? null : _export,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          backgroundColor: AppPalette.blueDeep,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(_exporting ? 'Preparing…' : 'Export data'),
+      ),
+      const SizedBox(height: 28),
+      Container(height: 1, color: palette.border),
+      const SizedBox(height: 20),
+      Text('IMPORT', style: fieldLabelStyle),
+      const SizedBox(height: 4),
+      Text(
+        'Restore accounts and months from a previously exported JSON '
+        'backup. This will overwrite any accounts/months with matching '
+        'ids. Vault items are never included.',
+        style: TextStyle(
+          fontSize: 12,
+          fontFamily: uiFont,
+          color: palette.muted,
+        ),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton(
+        onPressed: _importing ? null : _pickAndImport,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          side: BorderSide(color: palette.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          foregroundColor: palette.heading,
+        ),
+        child: Text(_importing ? 'Importing…' : 'Import backup'),
+      ),
+    ];
   }
 }
