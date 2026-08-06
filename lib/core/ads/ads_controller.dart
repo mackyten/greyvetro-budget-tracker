@@ -89,11 +89,12 @@ class AdsController {
     await MobileAds.instance.initialize();
   }
 
-  /// Banner ad unit ID for the current platform. These are Google's public
-  /// *test* IDs for anchored adaptive banners — safe to click, never pay.
-  /// TODO(owner): create real ad units in the AdMob console and swap the
-  /// release values here (and the APPLICATION_ID in AndroidManifest.xml)
-  /// before shipping to the Play Store.
+  /// Banner ad unit ID for the current platform. Debug builds always use
+  /// Google's public *test* IDs (safe to click, never pay) so day-to-day
+  /// development can't trip AdMob's invalid-traffic policy; release builds
+  /// use the real `home_bottom_banner` unit. The iOS release value is still
+  /// the test ID — there is no iOS target yet, so create an iOS app + ad
+  /// unit in the AdMob console if one is ever added.
   static String get bannerAdUnitId {
     if (kDebugMode) {
       return Platform.isAndroid
@@ -101,7 +102,7 @@ class AdsController {
           : 'ca-app-pub-3940256099942544/2435281174';
     }
     return Platform.isAndroid
-        ? 'ca-app-pub-3940256099942544/9214589741'
+        ? 'ca-app-pub-2625609837542116/2963766721'
         : 'ca-app-pub-3940256099942544/2435281174';
   }
 }
