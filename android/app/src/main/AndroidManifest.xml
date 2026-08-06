@@ -39,6 +39,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Google AdMob application ID. This is Google's public *test* app
+             ID — the SDK crashes at init without one. Replace with the real
+             app ID from the AdMob console before a Play Store release
+             (real ad unit IDs live in lib/core/ads/ads_controller.dart). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
         <!-- flutter_local_notifications: lets the plugin deliver the
              month-end reminder and reschedule it after a reboot. -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />

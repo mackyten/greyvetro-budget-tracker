@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/adaptive_route.dart';
+import '../../../core/ads/ads_controller.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/pin_lock/biometric_auth.dart';
@@ -555,6 +556,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
+      // Owner-only escape hatch: interacting with your own live ads
+      // violates AdMob policy, so the owner account can hide them (default)
+      // and flip them on to preview what real users see. Everyone else
+      // always has ads on and never sees this section.
+      if (AdsController.instance.isOwner) ...[
+        const SizedBox(height: 18),
+        _SectionLabel('Ads'),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: palette.surfaceAlt,
+            border: Border.all(color: palette.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Show ads',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: uiFont,
+                        color: palette.heading,
+                      ),
+                    ),
+                    Text(
+                      'Owner-only control — other users always see ads',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontFamily: uiFont,
+                        color: palette.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              ValueListenableBuilder<bool>(
+                valueListenable: AdsController.instance.adsEnabled,
+                builder: (context, enabled, _) => PillSwitch(
+                  value: enabled,
+                  onChanged: (value) =>
+                      AdsController.instance.setOwnerAdsEnabled(value),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       const SizedBox(height: 18),
       _SectionLabel('Account'),
       const SizedBox(height: 4),

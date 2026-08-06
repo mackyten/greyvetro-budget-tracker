@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/ads/ad_banner.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/format.dart';
@@ -160,8 +161,24 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ColoredBox(
               color: context.palette.bg,
-              child: StreamBuilder<List<Account>>(
-                stream: widget.repository.watchAccounts(),
+              child: Column(
+                children: [
+                  Expanded(child: _buildWideContent(context)),
+                  // Collapses to nothing on macOS/web; only renders on
+                  // Android/iOS with ads enabled (see AdBanner).
+                  const AdBanner(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWideContent(BuildContext context) {
+    return StreamBuilder<List<Account>>(
+      stream: widget.repository.watchAccounts(),
                 builder: (context, accountsSnap) {
                   if (!accountsSnap.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -233,11 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   );
                 },
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -432,6 +444,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
+                // Collapses to nothing unless ads are enabled on a
+                // supported platform (see AdBanner).
+                const AdBanner(),
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'core/ads/ads_controller.dart';
 import 'core/app_check_setup.dart';
 import 'core/auth/app_user.dart';
 import 'core/auth/auth_gate.dart';
@@ -107,6 +108,15 @@ class _AuthenticatedApp extends StatefulWidget {
 class _AuthenticatedAppState extends State<_AuthenticatedApp> {
   late final BudgetRepository _repository = widget.repositoryBuilder(widget.user.uid);
   late final Future<void> _ready = widget.prepare(_repository, widget.user.uid);
+
+  @override
+  void initState() {
+    super.initState();
+    // Fire-and-forget: the ad banner and the owner-only Settings toggle are
+    // both driven by AdsController.adsEnabled notifications, so app startup
+    // never blocks on the ads decision resolving.
+    AdsController.instance.configureForUser(widget.user);
+  }
 
   @override
   Widget build(BuildContext context) {
