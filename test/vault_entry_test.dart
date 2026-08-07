@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/core/design_tokens.dart';
-import 'package:greyvetro_budget_tracker/core/pin_lock/pin_store.dart';
-import 'package:greyvetro_budget_tracker/features/vault/ui/vault_entry.dart';
+import 'package:vetro_ledger/core/design_tokens.dart';
+import 'package:vetro_ledger/core/pin_lock/pin_store.dart';
+import 'package:vetro_ledger/features/vault/ui/vault_entry.dart';
 
 class _FakeSecureStoragePlatform extends FlutterSecureStoragePlatform {
   final Map<String, String> _values = {};

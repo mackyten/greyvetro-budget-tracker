@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'package:greyvetro_budget_tracker/core/auth/app_user.dart';
-import 'package:greyvetro_budget_tracker/core/auth/auth_service.dart';
-import 'package:greyvetro_budget_tracker/core/pin_lock/pin_store.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/data/budget_repository.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/account.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
-import 'package:greyvetro_budget_tracker/main.dart';
+import 'package:vetro_ledger/core/auth/app_user.dart';
+import 'package:vetro_ledger/core/auth/auth_service.dart';
+import 'package:vetro_ledger/core/pin_lock/pin_store.dart';
+import 'package:vetro_ledger/features/net_worth/data/budget_repository.dart';
+import 'package:vetro_ledger/features/net_worth/models/account.dart';
+import 'package:vetro_ledger/features/net_worth/models/monthly_entry.dart';
+import 'package:vetro_ledger/main.dart';
 
 /// Always-signed-in fake so widget tests can reach the app without touching
 /// real Firebase Auth.

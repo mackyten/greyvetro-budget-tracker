@@ -1,6 +1,6 @@
 # Finished Tasks
 
-Archive of completed work items for Greyvetro Budget Tracker, moved here from
+Archive of completed work items for Vetro Ledger, moved here from
 TASKS.md. IDs are preserved as-is and never reused.
 
 | ID | Description | Acceptance Criteria | Difficulty |

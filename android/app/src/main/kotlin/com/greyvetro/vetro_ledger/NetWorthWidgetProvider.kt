@@ -1,4 +1,4 @@
-package com.greyvetro.greyvetro_budget_tracker
+package com.greyvetro.vetro_ledger
 
 import android.appwidget.AppWidgetManager
 import android.content.Context

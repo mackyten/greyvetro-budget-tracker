@@ -1,4 +1,4 @@
-# Greyvetro Budget Tracker
+# Vetro Ledger
 
 Android Flutter app that replaces the "Net Worth / Liquidity Tracker" sheet
 from the personal Numbers budget spreadsheet. Backed by Firebase (Firestore).

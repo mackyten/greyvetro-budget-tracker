@@ -90,13 +90,13 @@ location sharing, ability to purchase digital goods. → Should resolve to
 
 ## 5. Store listing copy
 
-**App name:** Greyvetro Budget Tracker
+**App name:** Vetro Ledger
 
 **Short description** (68/80 chars):
 > Track your net worth privately — no analytics, no data resale, ever.
 
 **Full description** (draft — edit freely, well under the 4000-char cap):
-> Greyvetro Budget Tracker is a simple, private net worth and liquidity
+> Vetro Ledger is a simple, private net worth and liquidity
 > tracker. Log your account balances each month and watch your net worth
 > trend over time — no linked bank accounts, no analytics, no data
 > brokers.

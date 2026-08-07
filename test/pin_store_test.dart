@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/core/pin_lock/pin_store.dart';
+import 'package:vetro_ledger/core/pin_lock/pin_store.dart';
 
 /// Same in-memory fake as `widget_test.dart` / `vault_entry_test.dart`, so
 /// PinStore hits a map instead of an unmocked platform channel.

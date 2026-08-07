@@ -1,4 +1,4 @@
-# Privacy Policy — Greyvetro Budget Tracker
+# Privacy Policy — Vetro Ledger
 
 **Effective:** 7 August 2026
 **Applies to:** Android app, all versions from 1.0.0
@@ -15,7 +15,7 @@ listing to that URL once the domain mapping is live.
 
 ## Overview
 
-Greyvetro Budget Tracker is a personal net worth and liquidity tracker for
+Vetro Ledger is a personal net worth and liquidity tracker for
 Android, built by Greyvetro. This policy explains what the app collects,
 why, where it's stored, and who — if anyone — it's shared with. It covers
 every permission and data type the app actually requests.

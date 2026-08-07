@@ -64,7 +64,7 @@ class BudgetTrackerApp extends StatelessWidget {
       valueListenable: _themeController,
       builder: (context, mode, _) {
         return MaterialApp(
-          title: 'Greyvetro Budget Tracker',
+          title: 'Vetro Ledger',
           theme: _buildTheme(AppPalette.light, Brightness.light),
           darkTheme: _buildTheme(AppPalette.dark, Brightness.dark),
           themeMode: mode,

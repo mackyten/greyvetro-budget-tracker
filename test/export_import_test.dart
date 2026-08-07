@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/features/net_worth/data/export_builder.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/data/import_reader.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/account.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
+import 'package:vetro_ledger/features/net_worth/data/export_builder.dart';
+import 'package:vetro_ledger/features/net_worth/data/import_reader.dart';
+import 'package:vetro_ledger/features/net_worth/models/account.dart';
+import 'package:vetro_ledger/features/net_worth/models/monthly_entry.dart';
 
 final _accounts = [
   Account(id: 'cash', name: 'Cash Wallet', section: AccountSection.asset, order: 0),

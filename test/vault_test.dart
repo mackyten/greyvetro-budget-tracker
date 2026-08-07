@@ -1,8 +1,8 @@
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/features/vault/data/vault_store.dart';
-import 'package:greyvetro_budget_tracker/features/vault/models/vault_item.dart';
+import 'package:vetro_ledger/features/vault/data/vault_store.dart';
+import 'package:vetro_ledger/features/vault/models/vault_item.dart';
 
 class _FakeSecureStoragePlatform extends FlutterSecureStoragePlatform {
   final Map<String, String> _values = {};

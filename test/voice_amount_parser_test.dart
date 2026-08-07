@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/features/net_worth/ui/voice_amount_parser.dart';
+import 'package:vetro_ledger/features/net_worth/ui/voice_amount_parser.dart';
 
 void main() {
   group('parseSpokenAmount — digit path', () {

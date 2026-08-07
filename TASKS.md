@@ -1,6 +1,6 @@
 # Tasks
 
-Tracks work items for Greyvetro Budget Tracker. IDs are sequential (`TASK-001`, `TASK-002`, ...) and never reused.
+Tracks work items for Vetro Ledger. IDs are sequential (`TASK-001`, `TASK-002`, ...) and never reused.
 
 | ID | Description | Acceptance Criteria | Difficulty |
 |----|--------------|----------------------|------------|

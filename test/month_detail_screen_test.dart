@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:greyvetro_budget_tracker/core/design_tokens.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/data/budget_repository.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/account.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/ui/month_detail_screen.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/ui/voice_input_button.dart';
+import 'package:vetro_ledger/core/design_tokens.dart';
+import 'package:vetro_ledger/features/net_worth/data/budget_repository.dart';
+import 'package:vetro_ledger/features/net_worth/models/account.dart';
+import 'package:vetro_ledger/features/net_worth/models/monthly_entry.dart';
+import 'package:vetro_ledger/features/net_worth/ui/month_detail_screen.dart';
+import 'package:vetro_ledger/features/net_worth/ui/voice_input_button.dart';
 
 class _RecordingRepository implements BudgetRepository {
   final List<MonthlyEntry> saved = [];

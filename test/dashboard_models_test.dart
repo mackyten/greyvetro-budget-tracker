@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/features/net_worth/models/account.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/month_summary.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/net_worth_projection.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/real_net_worth.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/streak.dart';
+import 'package:vetro_ledger/features/net_worth/models/account.dart';
+import 'package:vetro_ledger/features/net_worth/models/month_summary.dart';
+import 'package:vetro_ledger/features/net_worth/models/monthly_entry.dart';
+import 'package:vetro_ledger/features/net_worth/models/net_worth_projection.dart';
+import 'package:vetro_ledger/features/net_worth/models/real_net_worth.dart';
+import 'package:vetro_ledger/features/net_worth/models/streak.dart';
 
 final _accounts = [
   Account(id: 'cash', name: 'Cash', section: AccountSection.asset, order: 0),

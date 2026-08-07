@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:greyvetro_budget_tracker/core/ads/ads_controller.dart';
-import 'package:greyvetro_budget_tracker/core/auth/app_user.dart';
+import 'package:vetro_ledger/core/ads/ads_controller.dart';
+import 'package:vetro_ledger/core/auth/app_user.dart';
 
 /// Pure-logic tests for the ads switchboard: who counts as the owner, who
 /// gets ads, and how the owner's toggle persists. The Mobile Ads SDK itself

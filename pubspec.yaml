@@ -1,5 +1,5 @@
-name: greyvetro_budget_tracker
-description: "Greyvetro personal net worth / liquidity tracker"
+name: vetro_ledger
+description: "Vetro Ledger — private personal net worth / liquidity tracker"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

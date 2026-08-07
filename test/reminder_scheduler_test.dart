@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/features/net_worth/data/reminder_scheduler.dart';
-import 'package:greyvetro_budget_tracker/features/net_worth/models/monthly_entry.dart';
+import 'package:vetro_ledger/features/net_worth/data/reminder_scheduler.dart';
+import 'package:vetro_ledger/features/net_worth/models/monthly_entry.dart';
 
 void main() {
   final scheduler = ReminderScheduler.instance;

@@ -57,7 +57,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyA3mT48V_Q4P6R21JS4YcPkfJEFUeo4B9Y',
-    appId: '1:963651852002:android:b7da4e477f1ec934f1f0bb',
+    appId: '1:963651852002:android:8dcdb0a6cbc66aa4f1f0bb',
     messagingSenderId: '963651852002',
     projectId: 'greyvetro-budget-tracker',
     storageBucket: 'greyvetro-budget-tracker.firebasestorage.app',

@@ -1,11 +1,11 @@
 {
-    "name": "Greyvetro Budget Tracker",
-    "short_name": "Greyvetro",
+    "name": "Vetro Ledger",
+    "short_name": "Vetro Ledger",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#12151A",
     "theme_color": "#12151A",
-    "description": "Greyvetro personal net worth / liquidity tracker",
+    "description": "Vetro Ledger — private personal net worth / liquidity tracker",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

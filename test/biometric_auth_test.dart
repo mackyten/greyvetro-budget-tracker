@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:greyvetro_budget_tracker/core/pin_lock/biometric_auth.dart';
+import 'package:vetro_ledger/core/pin_lock/biometric_auth.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
