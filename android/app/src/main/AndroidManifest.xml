@@ -45,6 +45,16 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-2625609837542116~7613458170" />
+        <!-- Run ads SDK initialization and ad loading on background threads
+             (official GMA flags). Besides the startup-jank win, this is a
+             documented mitigation for device-specific "Unable to obtain a
+             JavascriptEngine" load failures seen on some OEM builds. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true" />
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
+            android:value="true" />
         <!-- flutter_local_notifications: lets the plugin deliver the
              month-end reminder and reschedule it after a reboot. -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />

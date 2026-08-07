@@ -56,8 +56,6 @@ class AdsController {
   static bool isOwnerEmail(String? email) =>
       email != null && email.trim().toLowerCase() == ownerEmail;
 
-  bool _sdkInitialized = false;
-
   /// Called once per signed-in session (from `_AuthenticatedApp`): decides
   /// the ads state for [user]. Non-owners always get ads; the owner gets
   /// their persisted toggle choice, defaulting to off.
@@ -69,7 +67,7 @@ class AdsController {
       final prefs = await SharedPreferences.getInstance();
       adsEnabled.value = prefs.getBool(_ownerAdsEnabledKey) ?? false;
     }
-    if (adsEnabled.value) await _ensureSdkInitialized();
+    if (adsEnabled.value) await ensureSdkReady();
   }
 
   /// Owner-only: flips ads for this session and persists the choice for
@@ -78,15 +76,21 @@ class AdsController {
   Future<void> setOwnerAdsEnabled(bool value) async {
     if (!_isOwner) return;
     adsEnabled.value = value;
-    if (value) await _ensureSdkInitialized();
+    if (value) await ensureSdkReady();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_ownerAdsEnabledKey, value);
   }
 
-  Future<void> _ensureSdkInitialized() async {
-    if (_sdkInitialized || !platformSupportsAds) return;
-    _sdkInitialized = true;
-    await MobileAds.instance.initialize();
+  Future<void>? _sdkInit;
+
+  /// Initializes the Mobile Ads SDK exactly once, memoizing the future so
+  /// concurrent callers (session configure + a banner about to load) all
+  /// await the *same* initialization. [AdBanner] awaits this before every
+  /// load — requesting an ad while initialize() is still in flight is a
+  /// known source of "Unable to obtain a JavascriptEngine" failures.
+  Future<void> ensureSdkReady() {
+    if (!platformSupportsAds) return Future.value();
+    return _sdkInit ??= MobileAds.instance.initialize();
   }
 
   /// Banner ad unit ID for the current platform. Debug builds always use

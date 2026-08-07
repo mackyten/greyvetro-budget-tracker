@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -15,13 +17,23 @@ class AdBanner extends StatefulWidget {
 }
 
 class _AdBannerState extends State<AdBanner> {
+  /// Give up after this many failed loads in one ads-on stretch. Failures
+  /// here are things like a WebView engine that won't start or no network —
+  /// worth a few spaced retries (the device's WebView often becomes usable
+  /// seconds after app start), but not an endless request loop that AdMob
+  /// would read as suspicious traffic. Toggling ads off/on resets the count.
+  static const int _maxAttempts = 3;
+  static const Duration _retryDelay = Duration(seconds: 5);
+
   BannerAd? _ad;
   bool _loaded = false;
 
-  /// True once a load has been kicked off for the current ads-on stretch.
-  /// Deliberately left true after a failed load so a broken network doesn't
-  /// cause a request loop on every rebuild; toggling ads off/on resets it.
+  /// True while a load is in flight or a loaded ad is showing — gates the
+  /// build-triggered kickoff so rebuilds don't stack duplicate requests.
   bool _requested = false;
+
+  int _attempts = 0;
+  Timer? _retryTimer;
 
   @override
   void initState() {
@@ -32,6 +44,7 @@ class _AdBannerState extends State<AdBanner> {
   @override
   void dispose() {
     AdsController.instance.adsEnabled.removeListener(_onAdsEnabledChanged);
+    _retryTimer?.cancel();
     _ad?.dispose();
     super.dispose();
   }
@@ -41,19 +54,28 @@ class _AdBannerState extends State<AdBanner> {
     if (!AdsController.instance.adsEnabled.value) {
       // Owner toggled ads off mid-session: drop the loaded ad entirely so
       // it stops rendering/refreshing, and allow a fresh load next time.
+      _retryTimer?.cancel();
       _ad?.dispose();
       _ad = null;
       _loaded = false;
       _requested = false;
+      _attempts = 0;
     }
     setState(() {});
   }
 
   Future<void> _load(double availableWidth) async {
+    // Loading while MobileAds.initialize() is still in flight is a known
+    // source of spurious "Unable to obtain a JavascriptEngine" failures —
+    // wait for it (memoized in the controller, so this is free after the
+    // first call).
+    await AdsController.instance.ensureSdkReady();
+    if (!mounted || !AdsController.instance.adsEnabled.value) return;
     final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(
       availableWidth.truncate(),
     );
     if (size == null || !mounted) return;
+    _attempts += 1;
     final ad = BannerAd(
       adUnitId: AdsController.bannerAdUnitId,
       size: size,
@@ -67,14 +89,27 @@ class _AdBannerState extends State<AdBanner> {
           setState(() => _loaded = true);
         },
         onAdFailedToLoad: (ad, error) {
-          // No-fill / network failure: stay collapsed rather than showing a
-          // blank strip. `_requested` stays true (see its doc comment).
+          debugPrint(
+            'AdBanner failed to load (attempt $_attempts/$_maxAttempts): '
+            'code=${error.code} domain=${error.domain} '
+            'message=${error.message}',
+          );
           ad.dispose();
           if (!mounted) return;
           setState(() {
             _ad = null;
             _loaded = false;
           });
+          // Stay collapsed rather than showing a blank strip; retry a few
+          // times in case the failure was transient (see _maxAttempts).
+          if (_attempts < _maxAttempts) {
+            _retryTimer = Timer(_retryDelay * _attempts, () {
+              if (!mounted || !AdsController.instance.adsEnabled.value) return;
+              // Clearing the gate lets the next build kick off a fresh load
+              // with a current layout width.
+              setState(() => _requested = false);
+            });
+          }
         },
       ),
     );
