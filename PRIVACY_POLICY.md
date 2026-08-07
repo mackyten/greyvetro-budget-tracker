@@ -1,6 +1,6 @@
 # Privacy Policy — Greyvetro Budget Tracker
 
-**Effective:** 2 August 2026
+**Effective:** 7 August 2026
 **Applies to:** Android app, all versions from 1.0.0
 **Controller:** Greyvetro
 **Contact:** macky@greyvetro.com
@@ -23,8 +23,12 @@ every permission and data type the app actually requests.
 The short version: your financial figures sync to a private, per-account
 Firestore database so you can rely on them across sessions. Anything more
 sensitive — card numbers, passwords, your app-lock PIN — is deliberately
-kept off that sync path and never leaves your device. There are no ads, no
-analytics trackers, and no data brokers anywhere in this app.
+kept off that sync path and never leaves your device. The app shows ads
+served by Google AdMob (except to the developer's own account, which keeps
+them off during day-to-day use); your financial data is never shared with
+AdMob or any advertiser — see **Advertising**, below, for exactly what the
+ad SDK does and doesn't see. There are no analytics trackers and no data
+brokers anywhere in this app.
 
 ## Summary
 
@@ -36,6 +40,7 @@ analytics trackers, and no data brokers anywhere in this app.
 | App-lock PIN | Locks the app; stored as a salted hash, not the PIN itself | On-device only |
 | Fingerprint / face | Biometric unlock | Never leaves OS |
 | Microphone audio | Optional voice balance entry | Not recorded/stored |
+| Advertising ID & ad interaction data | Serving ads via Google AdMob | Collected by Google, not us |
 
 ## What we collect
 
@@ -83,8 +88,10 @@ app storage to display it. Neither feature sends anything off your device.
   them.
 - To power features you explicitly opt into — voice entry, reminders, the
   widget, biometric unlock.
-- We do not use your data for advertising, profiling, or resale, and we do
-  not run any analytics SDK that tracks your behavior in the app.
+- Your financial data (balances, notes, Vault, PIN) is never used for
+  advertising, profiling, or resale, and we do not run any analytics SDK
+  that tracks your behavior in the app. Separately, the app displays ads
+  via Google AdMob — see **Advertising**, below.
 
 ## Where it's stored, and who can see it
 
@@ -102,14 +109,39 @@ your device, inside Android's Keystore-backed secure storage — the same
 mechanism Android uses to protect saved passwords and payment credentials
 system-wide.
 
+## Advertising
+
+The app shows ads served by **Google AdMob** to fund development. This is
+entirely separate from your financial data:
+
+- AdMob never receives your email, name, account balances, notes, Vault
+  contents, or PIN — none of that data path touches the ads SDK.
+- To serve and measure ads, the AdMob SDK on your device collects data
+  standard to mobile advertising: your device's advertising ID, IP-derived
+  approximate location, device/app info, and ad interaction data (views,
+  clicks). Google acts as an independent controller for this data under its
+  own [Privacy Policy](https://policies.google.com/privacy) and
+  [how Google uses data when you use partner sites/apps](https://policies.google.com/technologies/partner-sites).
+- Where required by law (EEA, UK, Switzerland, and other regulated
+  regions), the app runs Google's User Messaging Platform (UMP) consent
+  flow before requesting any ad, and no ad is requested until that flow
+  completes. You can review or change your choice any time from
+  **Settings → Ad privacy options** (shown only where applicable).
+- The developer's own account has ads switched off by default while using
+  the app day-to-day, and only enables them briefly to preview what real
+  users see — interacting with your own live ads violates AdMob policy.
+- Ads only render on Android/iOS; there are no ads on macOS or web builds
+  of this app.
+
 ## Third parties
 
-The only third party involved in running this app is Google, as the
+The two third parties involved in running this app are Google, as the
 provider of Firebase (hosting, database, authentication) and Google
-Sign-In. We do not sell data, share it with data brokers, or include any ad
-network or third-party analytics SDK. This app has never shipped an
-advertising or analytics SDK — the only network calls it makes are to your
-own Firebase project.
+Sign-In, and Google AdMob, which serves ads as described above. We do not
+sell data or share it with data brokers, and we do not run any
+third-party analytics SDK — the only network calls the app makes beyond
+your own Firebase project are the ad requests AdMob's SDK makes on your
+device.
 
 ## Data retention
 

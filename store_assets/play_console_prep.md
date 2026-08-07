@@ -36,13 +36,20 @@ https://greyvetro-budget-tracker.web.app/privacy
 | Personal info | Name | Yes | No | Account management | Required (sign-in) |
 | Financial info | Other financial info (user-entered balances/notes) | Yes | No | App functionality | Required (core feature) |
 | Audio | Voice or sound recordings | Yes* | No | App functionality | Optional |
-| App activity | — | No | No | — | — |
-| Device or other IDs | — | No | No | — | — |
+| App activity | App interactions, ads data (AdMob) | Yes† | Yes† | Advertising or marketing | Optional (consent-gated in EEA/UK/CH) |
+| Device or other IDs | Advertising ID (AdMob) | Yes† | Yes† | Advertising or marketing | Optional (consent-gated in EEA/UK/CH) |
 
 \* Mic audio is processed transiently by Android's on-device speech
 recognizer for voice balance entry; the app itself never records, stores,
 or transmits it. Answer "Collected" (Play counts transient access) but you
 can note "not stored" in the description field, and leave "shared" as No.
+
+† Google AdMob (banner ads) collects and shares device/advertising
+identifiers and ad interaction data for ad serving and measurement — this
+never includes the app's own financial data (balances, notes, Vault, PIN),
+which stays entirely out of the ads data path. A UMP consent flow gates ad
+requests in the EEA/UK/Switzerland. Declare purpose as "Advertising or
+marketing"; do **not** declare "App functionality" for this row.
 
 **Is all user data encrypted in transit?** Yes (TLS to Firebase)
 
@@ -72,7 +79,9 @@ location sharing, ability to purchase digital goods. → Should resolve to
 
 - Target age group: **18+** (financial app; also sidesteps
   Families-policy scrutiny entirely since it's not targeted at children)
-- Ads: **No ads**
+- Ads: **Yes** — banner ads via Google AdMob (`google_mobile_ads`), gated
+  behind a UMP consent flow where legally required. Also declare this under
+  App content → Ads.
 - In-app purchases: **None**
 - News app: No · COVID-19 app: No · Government app: No
 - **Financial features declaration**: this app does **not** need it —
@@ -83,13 +92,13 @@ location sharing, ability to purchase digital goods. → Should resolve to
 
 **App name:** Greyvetro Budget Tracker
 
-**Short description** (77/80 chars):
-> Track your net worth privately — no ads, no analytics, your data stays yours.
+**Short description** (68/80 chars):
+> Track your net worth privately — no analytics, no data resale, ever.
 
 **Full description** (draft — edit freely, well under the 4000-char cap):
 > Greyvetro Budget Tracker is a simple, private net worth and liquidity
 > tracker. Log your account balances each month and watch your net worth
-> trend over time — no linked bank accounts, no ads, no analytics, no data
+> trend over time — no linked bank accounts, no analytics, no data
 > brokers.
 >
 > • Monthly balance tracking across assets and reserved funds/liabilities
@@ -103,7 +112,9 @@ location sharing, ability to purchase digital goods. → Should resolve to
 > • Sign in with Google — your data is private to your account, encrypted
 >   in transit and at rest
 >
-> No ads. No analytics SDKs. No data resale. Ever.
+> This app is supported by banner ads. Your financial data — balances,
+> notes, Vault, PIN — is never shared with our ad partner. No analytics
+> SDKs. No data resale. Ever.
 
 **Category:** Finance (or Productivity, if Finance requires
 additional business verification you'd rather skip initially — check what

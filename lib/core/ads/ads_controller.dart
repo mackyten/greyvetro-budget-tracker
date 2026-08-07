@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -88,9 +89,75 @@ class AdsController {
   /// await the *same* initialization. [AdBanner] awaits this before every
   /// load — requesting an ad while initialize() is still in flight is a
   /// known source of "Unable to obtain a JavascriptEngine" failures.
+  ///
+  /// Gates on [_gatherConsent] first: Google's AdMob program policies
+  /// require a UMP (User Messaging Platform) consent flow to run — and
+  /// consent to be obtained where required — before any ad request is made
+  /// to EEA/UK/Swiss users. `canRequestAds()` reflects that outcome, so a
+  /// user who hasn't completed a required consent flow simply never gets
+  /// the SDK initialized and never sees an ad.
   Future<void> ensureSdkReady() {
     if (!platformSupportsAds) return Future.value();
-    return _sdkInit ??= MobileAds.instance.initialize();
+    return _sdkInit ??= _initializeWithConsent();
+  }
+
+  Future<void> _initializeWithConsent() async {
+    await _gatherConsent();
+    if (!await ConsentInformation.instance.canRequestAds()) return;
+    await MobileAds.instance.initialize();
+  }
+
+  /// Runs the UMP consent info update and, if the user is in a region where
+  /// it's required (EEA/UK/regulated US states), shows the consent form.
+  /// No-ops (completes immediately) everywhere else. Failures are swallowed
+  /// the same way [activateAppCheck] swallows platform hiccups — consent
+  /// gathering that can't complete should never crash the app; it just
+  /// means [ConsentInformation.canRequestAds] stays false and no ad loads.
+  Future<void> _gatherConsent() {
+    final completer = Completer<void>();
+    ConsentInformation.instance.requestConsentInfoUpdate(
+      ConsentRequestParameters(),
+      () {
+        ConsentForm.loadAndShowConsentFormIfRequired((formError) {
+          if (formError != null && kDebugMode) {
+            debugPrint('UMP consent form error: ${formError.message}');
+          }
+          if (!completer.isCompleted) completer.complete();
+        });
+      },
+      (formError) {
+        if (kDebugMode) {
+          debugPrint('UMP consent info update failed: ${formError.message}');
+        }
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+    return completer.future;
+  }
+
+  /// Whether the privacy-options re-entry point (Settings → "Ad privacy
+  /// options") must be shown. Google requires this for any user whose
+  /// consent was gathered under UMP, so they can revisit their choice —
+  /// distinct from the owner's ads on/off toggle, and shown to *all* users
+  /// (not just the owner) when applicable.
+  Future<bool> privacyOptionsRequired() async {
+    if (!platformSupportsAds) return false;
+    final status =
+        await ConsentInformation.instance.getPrivacyOptionsRequirementStatus();
+    return status == PrivacyOptionsRequirementStatus.required;
+  }
+
+  /// Re-shows the privacy options form so a user can change or withdraw
+  /// consent after the fact, per UMP policy.
+  Future<void> showPrivacyOptionsForm() {
+    final completer = Completer<void>();
+    ConsentForm.showPrivacyOptionsForm((formError) {
+      if (formError != null && kDebugMode) {
+        debugPrint('UMP privacy options form error: ${formError.message}');
+      }
+      if (!completer.isCompleted) completer.complete();
+    });
+    return completer.future;
   }
 
   /// Banner ad unit ID for the current platform. Debug builds always use

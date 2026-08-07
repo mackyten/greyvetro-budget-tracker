@@ -49,6 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
   bool _deletingAccount = false;
+  bool _adPrivacyOptionsRequired = false;
 
   final _inflationRateController = TextEditingController();
   Timer? _inflationSaveTimer;
@@ -58,6 +59,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadPinState();
     _loadInflationRate();
+    _loadAdPrivacyOptions();
+  }
+
+  Future<void> _loadAdPrivacyOptions() async {
+    final required = await AdsController.instance.privacyOptionsRequired();
+    if (!mounted) return;
+    setState(() => _adPrivacyOptionsRequired = required);
   }
 
   Future<void> _loadInflationRate() async {
@@ -607,6 +615,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+      // Required by Google's UMP consent policy: users whose ad consent was
+      // gathered under it (EEA/UK/regulated regions) must have a way to
+      // revisit that choice. Shown to everyone it applies to, not just the
+      // owner — [AdsController.privacyOptionsRequired] is false everywhere
+      // else, so this collapses to nothing for most users.
+      if (_adPrivacyOptionsRequired) ...[
+        const SizedBox(height: 18),
+        _SectionLabel('Privacy'),
+        const SizedBox(height: 4),
+        Material(
+          color: palette.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => AdsController.instance.showPrivacyOptionsForm(),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                border: Border.all(color: palette.border),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ad privacy options',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: uiFont,
+                            color: palette.heading,
+                          ),
+                        ),
+                        Text(
+                          'Review or change your ad consent choice',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: uiFont,
+                            color: palette.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 20, color: palette.muted),
+                ],
+              ),
+            ),
           ),
         ),
       ],
